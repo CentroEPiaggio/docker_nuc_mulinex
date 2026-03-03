@@ -15,7 +15,7 @@ xhost +
 docker run \
     `# Share the host’s network stack and interfaces. Allows multiple containers to interact with each other.` \
     --net=host \
-    --ipc=host
+    --ipc=host \
     `# Interactive processes, like a shell.` \
     -it \
     `# Clean up the container after exit.` \

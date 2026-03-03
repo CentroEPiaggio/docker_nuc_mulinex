@@ -6,13 +6,18 @@ services:
       args:
         - BASE_IMAGE=osrf/ros
         - BASE_TAG=humble-desktop-full
-        - IMAGE_NAME=mulinex
+        - MYUID=${UID}
+        - MYGID=${GID}
+        - USER=${USER}
         - WORKSPACE=mulinex_ws
 
     image: mulinex:humble
     container_name: mulinex
     network_mode: "host"
-    
+    ipc: host
+    privileged: true
+    init: true
+
     # Interactive shell settings
     stdin_open: true
     tty: true
@@ -36,15 +41,17 @@ services:
       - MPLCONFIGDIR=/home/${USER}/.matplotlib
       - XDG_RUNTIME_DIR=/tmp/runtime-${USER}
 
-    privileged: true
+    group_add:
+      - audio
+
     volumes:
-      # GUI
+      # GUI (X11)
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - /tmp/.docker.xauth:/tmp/.docker.xauth:rw
       # Workspace
-      - ./:/home/ros/mulinex_ws/
-      # Devices
+      - ./:/home/${USER}/mulinex_ws/
+      # Devices & shared memory (ROS 2 DDS)
       - /dev:/dev
-      # Shared memory (required for ROS 2 DDS)
       - /dev/shm:/dev/shm
       # Shell history
       - ~/.bash_history:/home/.bash_history
@@ -56,5 +63,6 @@ services:
       - ~/.config/Code:/home/${USER}/.config/Code
       # PlotJuggler
       - ~/docker/mulinex/Plotjuggler:/home/${USER}/.config/PlotJuggler
+
     devices:
       - /dev/snd:/dev/snd
