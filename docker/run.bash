@@ -15,6 +15,7 @@ xhost +
 docker run \
     `# Share the host’s network stack and interfaces. Allows multiple containers to interact with each other.` \
     --net=host \
+    --ipc=host
     `# Interactive processes, like a shell.` \
     -it \
     `# Clean up the container after exit.` \
@@ -47,6 +48,7 @@ docker run \
     --group-add $(getent group audio | cut -d: -f3) \
     `# Enable SharedMemory between host and container.` \
     `# https://answers.ros.org/question/370595/ros2-foxy-nodes-cant-communicate-through-docker-container-border/` \
+    -v /dev:/dev \
     -v /dev/shm:/dev/shm \
     `# Mount folders useful for VS Code.` \
     -v /home/$USER/.vscode:/home/$USER/.vscode \

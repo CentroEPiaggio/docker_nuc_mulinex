@@ -46,26 +46,3 @@ Stop the container:
 ```shell
 docker compose -f docker/compose.yaml down
 ```
-
-## SSH Connection with PC
-
-Run this ONCE on first setup:
-```shell
-sudo tee /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg >/dev/null <<'EOF'
-network: {config: disabled}
-EOF
-```
-
-To connect to the NUC from your PC, run
-```shell
-sudo cp net_conf/wifi_conf.yaml /etc/netplan/50-cloud-init.yaml
-sudo netplan generate
-sudo netplan apply --debug
-```
-
-To revert the changes and enable connecting the NUC to the internet, run
-```shell
-sudo cp net_conf/wired_conf.yaml /etc/netplan/50-cloud-init.yaml
-sudo netplan generate
-sudo netplan apply --debug
-```
