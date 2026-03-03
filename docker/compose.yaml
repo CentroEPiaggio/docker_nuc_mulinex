@@ -43,8 +43,7 @@ services:
       # Workspace
       - ./:/home/ros/mulinex_ws/
       # Devices
-      - /dev/input:/dev/input
-      - /dev/dri:/dev/dri
+      - /dev:/dev
       # Shared memory (required for ROS 2 DDS)
       - /dev/shm:/dev/shm
       # Shell history
@@ -59,19 +58,3 @@ services:
       - ~/docker/mulinex/Plotjuggler:/home/${USER}/.config/PlotJuggler
     devices:
       - /dev/snd:/dev/snd
-
-networks:
-  mulinex_cabled:
-    driver: macvlan
-    driver_opts:
-      parent: enp2s0  # Change to your network interface
-    ipam:
-      config:
-        - subnet: 100.100.100.0/24
-  mulinex_wifi:
-    driver: macvlan
-    driver_opts:
-      parent: wlp0s20f3  # Change to your network interface
-    ipam:
-      config:
-        - subnet: 192.168.88.0/24
