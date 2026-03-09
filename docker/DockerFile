@@ -15,11 +15,11 @@ RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
     iproute2 \
     iputils-ping \
     libeigen3-dev \
+    libyaml-cpp-dev \
     nano \
     nautilus \
     pipx \
     python3-pip \
-    python3-rosdep \
     ros-$ROS_DISTRO-ign-ros2-control \
     ros-$ROS_DISTRO-joint-state-publisher \
     ros-$ROS_DISTRO-joint-state-publisher-gui \

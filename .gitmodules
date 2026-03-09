@@ -1,3 +1,6 @@
 [submodule "src/sllidar_ros2"]
 	path = src/sllidar_ros2
 	url = https://github.com/Slamtec/sllidar_ros2.git
+[submodule "src/mulinex_description"]
+	path = src/mulinex_description
+	url = git@github.com:CentroEPiaggio/mulinex_description.git
