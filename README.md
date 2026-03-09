@@ -81,7 +81,7 @@ ros2 launch sllidar_ros2 view_sllidar_s2e_launch.py device_ip:=192.168.11.2
 
 Activate the joystick with
 ```shell
-ros2 launch omni_mulinex_joystic start_joystic_nodes.launch.py
+ros2 launch omni_mulinex_joystick joystick.launch.py
 ```
 
 Activate the state broadcaster with

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(teleop_mulinex)
+project(omni_mulinex_joystick)
 
 if(NOT CMAKE_CXX_STANDARD)
     set(CMAKE_CXX_STANDARD 17)
@@ -13,22 +13,27 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(pi3hat_moteus_int_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
 find_package(omni_utils REQUIRED)
-add_executable(teleop_mulinex_node
-    src/teleop_mulinex_node.cpp
+
+add_executable(omni_mulinex_joystick_node
+    src/omni_mulinex_joystick.cpp
     src/main.cpp
 )
 
-target_include_directories(teleop_mulinex_node
+target_include_directories(omni_mulinex_joystick_node
     PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
-ament_target_dependencies(teleop_mulinex_node
-    rclcpp geometry_msgs omni_utils)
+ament_target_dependencies(omni_mulinex_joystick_node
+    rclcpp sensor_msgs geometry_msgs pi3hat_moteus_int_msgs std_srvs omni_utils)
 
-install(TARGETS teleop_mulinex_node DESTINATION lib/${PROJECT_NAME})
+install(TARGETS omni_mulinex_joystick_node DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY launch/ DESTINATION share/${PROJECT_NAME}/launch)
+install(DIRECTORY config/ DESTINATION share/${PROJECT_NAME}/config)
 
 if(BUILD_TESTING)
     find_package(ament_lint_auto REQUIRED)

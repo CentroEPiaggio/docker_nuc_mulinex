@@ -1,7 +1,7 @@
 #pragma once
 
 #include "teleop_mulinex/keyboard_reader.hpp"
-#include "teleop_mulinex/quat_math.h"
+#include "omni_utils/quat_math.h"
 
 #include "geometry_msgs/msg/pose.hpp"
 #include "geometry_msgs/msg/twist.hpp"
