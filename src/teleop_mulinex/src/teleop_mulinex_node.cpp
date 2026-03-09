@@ -16,8 +16,8 @@ TeleopMulinex::TeleopMulinex() : Node("teleop_mulinex")
 
     pose_pub_ = this->create_publisher<geometry_msgs::msg::Pose>(
         "/ik_controller/base_pose", 1);
-    wheel_pub_ = this->create_publisher<pi3hat_moteus_int_msgs::msg::OmniMulinexCommand>(
-        "/omni_controller/command", 1);
+    wheel_pub_ = this->create_publisher<geometry_msgs::msg::Twist>(
+        "/omni_controller/twist_cmd", 1);
 
     timer_ = this->create_wall_timer(
         std::chrono::milliseconds(40),  // 25 Hz
@@ -101,10 +101,9 @@ void TeleopMulinex::update_messages()
     pose_msg_.orientation.z = body_quat_[2];
     pose_msg_.orientation.w = body_quat_[3];
 
-    wheel_msg_.v_x = wheel_vx_;
-    wheel_msg_.v_y = wheel_vy_;
-    wheel_msg_.omega = wheel_omega_;
-    wheel_msg_.height_rate = 0.0;
+    wheel_msg_.linear.x = wheel_vx_;
+    wheel_msg_.linear.y = wheel_vy_;
+    wheel_msg_.angular.z = wheel_omega_;
 }
 
 void TeleopMulinex::publish_messages()

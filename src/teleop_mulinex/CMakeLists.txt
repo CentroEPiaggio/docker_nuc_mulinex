@@ -14,8 +14,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
-find_package(pi3hat_moteus_int_msgs REQUIRED)
-
 add_executable(teleop_mulinex_node
     src/teleop_mulinex_node.cpp
     src/main.cpp
@@ -25,7 +23,7 @@ target_include_directories(teleop_mulinex_node
     PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
 ament_target_dependencies(teleop_mulinex_node
-    rclcpp geometry_msgs pi3hat_moteus_int_msgs)
+    rclcpp geometry_msgs)
 
 install(TARGETS teleop_mulinex_node DESTINATION lib/${PROJECT_NAME})
 

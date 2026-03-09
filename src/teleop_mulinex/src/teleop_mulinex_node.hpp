@@ -4,7 +4,7 @@
 #include "teleop_mulinex/quat_math.h"
 
 #include "geometry_msgs/msg/pose.hpp"
-#include "pi3hat_moteus_int_msgs/msg/omni_mulinex_command.hpp"
+#include "geometry_msgs/msg/twist.hpp"
 #include "rclcpp/rclcpp.hpp"
 
 #include <array>
@@ -41,7 +41,7 @@ private:
 
     // Publishers
     rclcpp::Publisher<geometry_msgs::msg::Pose>::SharedPtr pose_pub_;
-    rclcpp::Publisher<pi3hat_moteus_int_msgs::msg::OmniMulinexCommand>::SharedPtr wheel_pub_;
+    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr wheel_pub_;
 
     // Timer
     rclcpp::TimerBase::SharedPtr timer_;
@@ -63,7 +63,7 @@ private:
 
     // Messages
     geometry_msgs::msg::Pose pose_msg_;
-    pi3hat_moteus_int_msgs::msg::OmniMulinexCommand wheel_msg_;
+    geometry_msgs::msg::Twist wheel_msg_;
 };
 
 } // namespace teleop_mulinex

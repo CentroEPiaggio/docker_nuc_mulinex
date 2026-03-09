@@ -57,7 +57,7 @@ class IKController(Node):
 
         # Publisher
         self.joint_command_pub = self.create_publisher(
-            JointsCommand, '/ik_controller/joint_command', 1
+            JointsCommand, '/omni_controller/legs_cmd', 1
         )
 
         # Timer
