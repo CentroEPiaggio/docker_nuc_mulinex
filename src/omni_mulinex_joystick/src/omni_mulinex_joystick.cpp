@@ -7,6 +7,8 @@ namespace omni_mulinex_joystick {
 
 OmniMulinexJoystick::OmniMulinexJoystick() : Node("omni_mulinex_joystick")
 {
+    print_instructions();
+
     // Declare parameters
     this->declare_parameter("sup_vel_x", 1.0);
     this->declare_parameter("sup_vel_y", 1.0);
@@ -82,8 +84,6 @@ OmniMulinexJoystick::OmniMulinexJoystick() : Node("omni_mulinex_joystick")
     timer_ = this->create_wall_timer(
         std::chrono::milliseconds(timer_period_ms_),
         std::bind(&OmniMulinexJoystick::timer_callback, this));
-
-    print_instructions();
 }
 
 void OmniMulinexJoystick::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg)
@@ -269,38 +269,35 @@ void OmniMulinexJoystick::state_callback(
 
 void OmniMulinexJoystick::print_instructions()
 {
-    // ANSI green
-    const char* g = "\033[32m";
-    const char* r = "\033[0m";
-
-    printf("\n%s", g);
-    printf("╔══════════════════════════════════════════════════════════════╗\n");
-    printf("║              Omni Mulinex Joystick (PS4)                   ║\n");
-    printf("╠══════════════════════════════════════════════════════════════╣\n");
-    printf("║  NORMAL MODE                                               ║\n");
-    printf("║  ───────────                                               ║\n");
-    printf("║  Left Stick X/Y   → wheel vy / vx                         ║\n");
-    printf("║  Right Stick X    → wheel omega                            ║\n");
-    printf("║  Right Stick Y    → base height (rate)                     ║\n");
-    printf("║                                                            ║\n");
-    printf("║  L2 + STICKS (body orientation)                            ║\n");
-    printf("║  ──────────────────────────────                            ║\n");
-    printf("║  L2 + Left Stick  → roll / pitch (rate)                    ║\n");
-    printf("║  L2 + Right Stick → yaw (rate)                             ║\n");
-    printf("║                                                            ║\n");
-    printf("║  D-PAD (base position)                                     ║\n");
-    printf("║  ────────────────────                                      ║\n");
-    printf("║  D-Pad U/D → x position (step)                            ║\n");
-    printf("║  D-Pad L/R → y position (step)                             ║\n");
-    printf("║                                                            ║\n");
-    printf("║  BUTTONS                                                   ║\n");
-    printf("║  ───────                                                   ║\n");
-    printf("║  L1 → ACTIVATE        R1 → EMERGENCY STOP                 ║\n");
-    printf("║  ✕  → HOMING                                              ║\n");
-    printf("║  L3 → reset wheels    R3 → reset body pose                ║\n");
-    printf("║  PS → reset ALL                                            ║\n");
-    printf("╚══════════════════════════════════════════════════════════════╝\n");
-    printf("%s\n", r);
+    RCLCPP_INFO(this->get_logger(),
+        "\n\033[32m"
+        "╔════════════════════════════════════════════════════════════╗\n"
+        "║              Omni Mulinex Joystick (PS4)                   ║\n"
+        "╠════════════════════════════════════════════════════════════╣\n"
+        "║  NORMAL MODE                                               ║\n"
+        "║  ───────────                                               ║\n"
+        "║  Left Stick X/Y   → wheel vy / vx                          ║\n"
+        "║  Right Stick X    → wheel omega                            ║\n"
+        "║  Right Stick Y    → base height (rate)                     ║\n"
+        "║                                                            ║\n"
+        "║  L2 + STICKS (body orientation)                            ║\n"
+        "║  ──────────────────────────────                            ║\n"
+        "║  L2 + Left Stick  → roll / pitch (rate)                    ║\n"
+        "║  L2 + Right Stick → yaw (rate)                             ║\n"
+        "║                                                            ║\n"
+        "║  D-PAD (base position)                                     ║\n"
+        "║  ────────────────────                                      ║\n"
+        "║  D-Pad U/D → x position (step)                             ║\n"
+        "║  D-Pad L/R → y position (step)                             ║\n"
+        "║                                                            ║\n"
+        "║  BUTTONS                                                   ║\n"
+        "║  ───────                                                   ║\n"
+        "║  L1 → ACTIVATE        R1 → EMERGENCY STOP                  ║\n"
+        "║  ✕  → HOMING                                               ║\n"
+        "║  L3 → reset wheels    R3 → reset body pose                 ║\n"
+        "║  PS → reset ALL                                            ║\n"
+        "╚════════════════════════════════════════════════════════════╝"
+        "\033[0m");
 }
 
 } // namespace omni_mulinex_joystick
