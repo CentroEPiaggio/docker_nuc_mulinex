@@ -15,10 +15,13 @@ OmniMulinexJoystick::OmniMulinexJoystick() : Node("omni_mulinex_joystick")
     this->declare_parameter("yaw_step", 0.02);
     this->declare_parameter("roll_step", 0.02);
     this->declare_parameter("pitch_step", 0.02);
+    this->declare_parameter("pos_step", 0.005);
     this->declare_parameter("max_height", 0.05);
     this->declare_parameter("max_roll", 0.3);
     this->declare_parameter("max_pitch", 0.3);
     this->declare_parameter("max_yaw", 0.15);
+    this->declare_parameter("max_pos_x", 0.05);
+    this->declare_parameter("max_pos_y", 0.05);
     this->declare_parameter("deadzone", 0.1);
     this->declare_parameter("timer_period_ms", 100);
     this->declare_parameter("subscribe_state", true);
@@ -31,10 +34,13 @@ OmniMulinexJoystick::OmniMulinexJoystick() : Node("omni_mulinex_joystick")
     yaw_step_ = this->get_parameter("yaw_step").as_double();
     roll_step_ = this->get_parameter("roll_step").as_double();
     pitch_step_ = this->get_parameter("pitch_step").as_double();
+    pos_step_ = this->get_parameter("pos_step").as_double();
     max_height_ = this->get_parameter("max_height").as_double();
     max_roll_ = this->get_parameter("max_roll").as_double();
     max_pitch_ = this->get_parameter("max_pitch").as_double();
     max_yaw_ = this->get_parameter("max_yaw").as_double();
+    max_pos_x_ = this->get_parameter("max_pos_x").as_double();
+    max_pos_y_ = this->get_parameter("max_pos_y").as_double();
     deadzone_ = this->get_parameter("deadzone").as_double();
     timer_period_ms_ = this->get_parameter("timer_period_ms").as_int();
     subscribe_state_ = this->get_parameter("subscribe_state").as_bool();
@@ -67,6 +73,8 @@ OmniMulinexJoystick::OmniMulinexJoystick() : Node("omni_mulinex_joystick")
         "/omni_controller/activate_srv");
     emergency_client_ = this->create_client<std_srvs::srv::SetBool>(
         "/omni_controller/emergency_srv");
+    homing_client_ = this->create_client<std_srvs::srv::SetBool>(
+        "/omni_controller/homing_srv");
 
     // Timer
     timer_ = this->create_wall_timer(
@@ -94,71 +102,37 @@ void OmniMulinexJoystick::joy_callback(const sensor_msgs::msg::Joy::SharedPtr ms
     // Helper: rising edge detection for buttons
     auto btn_rising = [&](size_t idx) -> bool {
         if (idx >= buttons.size()) return false;
-        bool rising = buttons[idx] && (idx >= prev_buttons_.size() || !prev_buttons_[idx]);
-        return rising;
+        return buttons[idx] && (idx >= prev_buttons_.size() || !prev_buttons_[idx]);
     };
 
-    // ── Wheel analog ────────────────────────────────────────────────────
-    if (axes.size() > 1) wheel_vx_ = dz(axes[1]) * sup_vel_x_;
-    if (axes.size() > 0) wheel_vy_ = dz(axes[0]) * sup_vel_y_;
-    if (axes.size() > 3) wheel_omega_ = dz(axes[3]) * sup_omega_;
+    // ── Store analog stick values ───────────────────────────────────────
+    if (axes.size() > 0) joy_left_x_ = dz(axes[0]);
+    if (axes.size() > 1) joy_left_y_ = dz(axes[1]);
+    if (axes.size() > 3) joy_right_x_ = dz(axes[3]);
+    if (axes.size() > 4) joy_right_y_ = dz(axes[4]);
 
-    // ── Body incremental (edge-triggered) ───────────────────────────────
+    // L2 modifier (button 6)
+    l2_held_ = (buttons.size() > 6) && buttons[6];
 
-    // D-pad left/right (axes[6]) → roll
-    if (axes.size() > 6) {
-        bool active = std::abs(axes[6]) > 0.5;
-        if (active && !prev_dpad_lr_active_) {
-            double sign = (axes[6] > 0.0) ? 1.0 : -1.0;
-            body_roll_ = std::clamp(body_roll_ + sign * roll_step_, -max_roll_, max_roll_);
-        }
-        prev_dpad_lr_active_ = active;
-    }
-
-    // D-pad up/down (axes[7]) → pitch
+    // ── D-pad: base x/y position (edge-triggered) ──────────────────────
+    // D-pad up/down (axes[7]) → x position
     if (axes.size() > 7) {
         bool active = std::abs(axes[7]) > 0.5;
         if (active && !prev_dpad_ud_active_) {
             double sign = (axes[7] > 0.0) ? 1.0 : -1.0;
-            body_pitch_ = std::clamp(body_pitch_ + sign * pitch_step_, -max_pitch_, max_pitch_);
+            body_x_ = std::clamp(body_x_ + sign * pos_step_, -max_pos_x_, max_pos_x_);
         }
         prev_dpad_ud_active_ = active;
     }
 
-    // △ (btn 2) → height up, ✕ (btn 0) → height down
-    if (btn_rising(2)) {
-        body_height_ = std::clamp(body_height_ + height_step_, -max_height_, max_height_);
-    }
-    if (btn_rising(0)) {
-        body_height_ = std::clamp(body_height_ - height_step_, -max_height_, max_height_);
-    }
-
-    // □ (btn 3) → yaw left, ○ (btn 1) → yaw right
-    if (btn_rising(3)) {
-        body_yaw_ = std::clamp(body_yaw_ + yaw_step_, -max_yaw_, max_yaw_);
-    }
-    if (btn_rising(1)) {
-        body_yaw_ = std::clamp(body_yaw_ - yaw_step_, -max_yaw_, max_yaw_);
-    }
-
-    // ── Resets ──────────────────────────────────────────────────────────
-    // L3 (btn 11) → reset wheels
-    if (btn_rising(11)) {
-        wheel_vx_ = wheel_vy_ = wheel_omega_ = 0.0;
-        RCLCPP_INFO(this->get_logger(), "Wheels reset");
-    }
-
-    // R3 (btn 12) → reset body pose
-    if (btn_rising(12)) {
-        body_height_ = body_roll_ = body_pitch_ = body_yaw_ = 0.0;
-        RCLCPP_INFO(this->get_logger(), "Body pose reset");
-    }
-
-    // PS (btn 10) → reset all
-    if (btn_rising(10)) {
-        wheel_vx_ = wheel_vy_ = wheel_omega_ = 0.0;
-        body_height_ = body_roll_ = body_pitch_ = body_yaw_ = 0.0;
-        RCLCPP_INFO(this->get_logger(), "All reset");
+    // D-pad left/right (axes[6]) → y position
+    if (axes.size() > 6) {
+        bool active = std::abs(axes[6]) > 0.5;
+        if (active && !prev_dpad_lr_active_) {
+            double sign = (axes[6] > 0.0) ? 1.0 : -1.0;
+            body_y_ = std::clamp(body_y_ + sign * pos_step_, -max_pos_y_, max_pos_y_);
+        }
+        prev_dpad_lr_active_ = active;
     }
 
     // ── Services ────────────────────────────────────────────────────────
@@ -186,6 +160,40 @@ void OmniMulinexJoystick::joy_callback(const sensor_msgs::msg::Joy::SharedPtr ms
         }
     }
 
+    // ✕ (btn 0) → homing
+    if (btn_rising(0)) {
+        auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
+        req->data = true;
+        if (homing_client_->service_is_ready()) {
+            homing_client_->async_send_request(req);
+            RCLCPP_INFO(this->get_logger(), "Homing service called");
+        } else {
+            RCLCPP_WARN(this->get_logger(), "Homing service not available");
+        }
+    }
+
+    // ── Resets ──────────────────────────────────────────────────────────
+    // L3 (btn 11) → reset wheels
+    if (btn_rising(11)) {
+        joy_left_x_ = joy_left_y_ = joy_right_x_ = joy_right_y_ = 0.0;
+        RCLCPP_INFO(this->get_logger(), "Wheels reset");
+    }
+
+    // R3 (btn 12) → reset body pose
+    if (btn_rising(12)) {
+        body_x_ = body_y_ = body_height_ = 0.0;
+        body_roll_ = body_pitch_ = body_yaw_ = 0.0;
+        RCLCPP_INFO(this->get_logger(), "Body pose reset");
+    }
+
+    // PS (btn 10) → reset all
+    if (btn_rising(10)) {
+        joy_left_x_ = joy_left_y_ = joy_right_x_ = joy_right_y_ = 0.0;
+        body_x_ = body_y_ = body_height_ = 0.0;
+        body_roll_ = body_pitch_ = body_yaw_ = 0.0;
+        RCLCPP_INFO(this->get_logger(), "All reset");
+    }
+
     // Update previous button state
     prev_buttons_.resize(buttons.size());
     for (size_t i = 0; i < buttons.size(); i++) {
@@ -195,18 +203,41 @@ void OmniMulinexJoystick::joy_callback(const sensor_msgs::msg::Joy::SharedPtr ms
 
 void OmniMulinexJoystick::timer_callback()
 {
-    // Publish twist
+    // ── Twist (wheels) ──────────────────────────────────────────────────
     geometry_msgs::msg::Twist twist_msg;
-    twist_msg.linear.x = wheel_vx_;
-    twist_msg.linear.y = wheel_vy_;
-    twist_msg.angular.z = wheel_omega_;
+    if (!l2_held_) {
+        // Normal: sticks → wheels, right stick Y → height rate
+        twist_msg.linear.x = joy_left_y_ * sup_vel_x_;
+        twist_msg.linear.y = joy_left_x_ * sup_vel_y_;
+        twist_msg.angular.z = joy_right_x_ * sup_omega_;
+
+        body_height_ = std::clamp(
+            body_height_ + joy_right_y_ * height_step_,
+            -max_height_, max_height_);
+    } else {
+        // L2 held: wheels zero, sticks → body orientation rate
+        twist_msg.linear.x = 0.0;
+        twist_msg.linear.y = 0.0;
+        twist_msg.angular.z = 0.0;
+
+        body_roll_ = std::clamp(
+            body_roll_ + joy_left_x_ * roll_step_,
+            -max_roll_, max_roll_);
+        body_pitch_ = std::clamp(
+            body_pitch_ + joy_left_y_ * pitch_step_,
+            -max_pitch_, max_pitch_);
+        body_yaw_ = std::clamp(
+            body_yaw_ + joy_right_x_ * yaw_step_,
+            -max_yaw_, max_yaw_);
+    }
     twist_pub_->publish(twist_msg);
 
-    // Build quaternion from axis-angle vector (roll, pitch, yaw)
+    // ── Pose (body) ─────────────────────────────────────────────────────
     auto q = quat_exp_vec({body_roll_, body_pitch_, body_yaw_});
 
-    // Publish pose
     geometry_msgs::msg::Pose pose_msg;
+    pose_msg.position.x = body_x_;
+    pose_msg.position.y = body_y_;
     pose_msg.position.z = body_height_;
     pose_msg.orientation.x = q[0];
     pose_msg.orientation.y = q[1];
@@ -231,15 +262,27 @@ void OmniMulinexJoystick::print_instructions()
     printf("╔══════════════════════════════════════════════════════════════╗\n");
     printf("║              Omni Mulinex Joystick (PS4)                   ║\n");
     printf("╠══════════════════════════════════════════════════════════════╣\n");
-    printf("║  LEFT SIDE (locomotion)       RIGHT SIDE (body pose)       ║\n");
-    printf("║  ─────────────────────        ──────────────────────       ║\n");
-    printf("║  Left Stick Y  → vx          D-Pad L/R   → roll  (step)  ║\n");
-    printf("║  Left Stick X  → vy          D-Pad U/D   → pitch (step)  ║\n");
-    printf("║  Right Stick X → omega       △ / ✕       → height ±      ║\n");
-    printf("║                               □ / ○       → yaw ±        ║\n");
+    printf("║  NORMAL MODE                                               ║\n");
+    printf("║  ───────────                                               ║\n");
+    printf("║  Left Stick X/Y   → wheel vy / vx                         ║\n");
+    printf("║  Right Stick X    → wheel omega                            ║\n");
+    printf("║  Right Stick Y    → base height (rate)                     ║\n");
     printf("║                                                            ║\n");
-    printf("║  L1 → ACTIVATE               R1 → EMERGENCY STOP          ║\n");
-    printf("║  L3 → reset wheels            R3 → reset body pose        ║\n");
+    printf("║  L2 + STICKS (body orientation)                            ║\n");
+    printf("║  ──────────────────────────────                            ║\n");
+    printf("║  L2 + Left Stick  → roll / pitch (rate)                    ║\n");
+    printf("║  L2 + Right Stick → yaw (rate)                             ║\n");
+    printf("║                                                            ║\n");
+    printf("║  D-PAD (base position)                                     ║\n");
+    printf("║  ────────────────────                                      ║\n");
+    printf("║  D-Pad U/D → x position (step)                            ║\n");
+    printf("║  D-Pad L/R → y position (step)                             ║\n");
+    printf("║                                                            ║\n");
+    printf("║  BUTTONS                                                   ║\n");
+    printf("║  ───────                                                   ║\n");
+    printf("║  L1 → ACTIVATE        R1 → EMERGENCY STOP                 ║\n");
+    printf("║  ✕  → HOMING                                              ║\n");
+    printf("║  L3 → reset wheels    R3 → reset body pose                ║\n");
     printf("║  PS → reset ALL                                            ║\n");
     printf("╚══════════════════════════════════════════════════════════════╝\n");
     printf("%s\n", r);

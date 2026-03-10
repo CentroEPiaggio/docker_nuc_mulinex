@@ -32,6 +32,7 @@ private:
     // Service clients
     rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr activate_client_;
     rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr emergency_client_;
+    rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr homing_client_;
 
     // Timer
     rclcpp::TimerBase::SharedPtr timer_;
@@ -44,20 +45,27 @@ private:
     double yaw_step_;
     double roll_step_;
     double pitch_step_;
+    double pos_step_;
     double max_height_;
     double max_roll_;
     double max_pitch_;
     double max_yaw_;
+    double max_pos_x_;
+    double max_pos_y_;
     double deadzone_;
     int timer_period_ms_;
     bool subscribe_state_;
 
-    // State: wheel velocities
-    double wheel_vx_ = 0.0;
-    double wheel_vy_ = 0.0;
-    double wheel_omega_ = 0.0;
+    // Stored joystick analog inputs
+    double joy_left_x_ = 0.0;
+    double joy_left_y_ = 0.0;
+    double joy_right_x_ = 0.0;
+    double joy_right_y_ = 0.0;
+    bool l2_held_ = false;
 
-    // State: body pose
+    // State: body pose (accumulated via rate control)
+    double body_x_ = 0.0;
+    double body_y_ = 0.0;
     double body_height_ = 0.0;
     double body_roll_ = 0.0;
     double body_pitch_ = 0.0;

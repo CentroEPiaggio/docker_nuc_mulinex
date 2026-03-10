@@ -8,9 +8,12 @@ omni_mulinex_joystick:
     roll_step: 0.02
     pitch_step: 0.02
     yaw_step: 0.02
+    pos_step: 0.005
     max_height: 0.05
     max_roll: 0.3
     max_pitch: 0.3
     max_yaw: 0.15
+    max_pos_x: 0.05
+    max_pos_y: 0.05
     deadzone: 0.1
     subscribe_state: true
