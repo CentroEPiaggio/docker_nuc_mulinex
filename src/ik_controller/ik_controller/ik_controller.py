@@ -53,7 +53,7 @@ class IKController(Node):
             Pose, '/ik_controller/base_pose', self.base_pose_command_callback, 1
         )
         self.create_subscription(
-            JointsStates, '/joint_states', self.joint_states_callback, 1
+            JointsStates, '/omni_controller/joints_state', self.joint_states_callback, 1
         )
 
         # Publisher
