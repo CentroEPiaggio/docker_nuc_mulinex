@@ -75,6 +75,8 @@ OmniMulinexJoystick::OmniMulinexJoystick() : Node("omni_mulinex_joystick")
         "/omni_controller/emergency_srv");
     homing_client_ = this->create_client<std_srvs::srv::SetBool>(
         "/omni_controller/homing_srv");
+    ik_reinit_client_ = this->create_client<std_srvs::srv::SetBool>(
+        "/ik_controller/reinitialize_srv");
 
     // Timer
     timer_ = this->create_wall_timer(
@@ -136,8 +138,21 @@ void OmniMulinexJoystick::joy_callback(const sensor_msgs::msg::Joy::SharedPtr ms
     }
 
     // ── Services ────────────────────────────────────────────────────────
-    // L1 (btn 4) → activate
+    // L1 (btn 4) → activate (reset body pose + reinitialize IK first)
     if (btn_rising(4)) {
+        // Reset body pose to zero
+        body_x_ = body_y_ = body_height_ = 0.0;
+        body_roll_ = body_pitch_ = body_yaw_ = 0.0;
+
+        // Reinitialize IK controller
+        if (ik_reinit_client_->service_is_ready()) {
+            auto ik_req = std::make_shared<std_srvs::srv::SetBool::Request>();
+            ik_req->data = true;
+            ik_reinit_client_->async_send_request(ik_req);
+            RCLCPP_INFO(this->get_logger(), "IK reinitialize service called");
+        }
+
+        // Activate controller
         auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
         req->data = true;
         if (activate_client_->service_is_ready()) {

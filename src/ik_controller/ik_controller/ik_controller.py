@@ -7,6 +7,7 @@ from geometry_msgs.msg import Pose
 from pi3hat_moteus_int_msgs.msg import JointsCommand, JointsStates
 from rclpy.node import Node
 from robot_model.robot_wrapper import RobotWrapper
+from std_srvs.srv import SetBool
 
 
 class IKController(Node):
@@ -60,6 +61,11 @@ class IKController(Node):
             JointsCommand, '/omni_controller/legs_cmd', 1
         )
 
+        # Reinitialize service
+        self.create_service(
+            SetBool, '/ik_controller/reinitialize_srv', self.reinitialize_callback
+        )
+
         # Timer
         self.timer = self.create_timer(1.0 / rate, self.timer_callback)
 
@@ -82,6 +88,13 @@ class IKController(Node):
             f'IK controller initialized for {self.robot_name} '
             f'({n_joints} joints, {self.n_joints_per_leg} per leg)'
         )
+
+    def reinitialize_callback(self, request, response):
+        self.initialized = False
+        self.get_logger().info('IK controller reinitialization requested')
+        response.success = True
+        response.message = 'IK controller will reinitialize from next joint states'
+        return response
 
     def joint_states_callback(self, msg: JointsStates):
         # Reorder joints to match the order in all_robots.yaml

@@ -33,6 +33,7 @@ private:
     rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr activate_client_;
     rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr emergency_client_;
     rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr homing_client_;
+    rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr ik_reinit_client_;
 
     // Timer
     rclcpp::TimerBase::SharedPtr timer_;
