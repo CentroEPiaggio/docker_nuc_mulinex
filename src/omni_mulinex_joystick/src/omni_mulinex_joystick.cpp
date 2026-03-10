@@ -63,8 +63,8 @@ OmniMulinexJoystick::OmniMulinexJoystick() : Node("omni_mulinex_joystick")
     }
 
     // Service clients
-    homing_client_ = this->create_client<std_srvs::srv::SetBool>(
-        "/omni_controller/homing_srv");
+    activate_client_ = this->create_client<std_srvs::srv::SetBool>(
+        "/omni_controller/activate_srv");
     emergency_client_ = this->create_client<std_srvs::srv::SetBool>(
         "/omni_controller/emergency_srv");
 
@@ -162,15 +162,15 @@ void OmniMulinexJoystick::joy_callback(const sensor_msgs::msg::Joy::SharedPtr ms
     }
 
     // ── Services ────────────────────────────────────────────────────────
-    // L1 (btn 4) → homing
+    // L1 (btn 4) → activate
     if (btn_rising(4)) {
         auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
         req->data = true;
-        if (homing_client_->service_is_ready()) {
-            homing_client_->async_send_request(req);
-            RCLCPP_INFO(this->get_logger(), "Homing service called");
+        if (activate_client_->service_is_ready()) {
+            activate_client_->async_send_request(req);
+            RCLCPP_INFO(this->get_logger(), "Activate service called");
         } else {
-            RCLCPP_WARN(this->get_logger(), "Homing service not available");
+            RCLCPP_WARN(this->get_logger(), "Activate service not available");
         }
     }
 
@@ -238,7 +238,7 @@ void OmniMulinexJoystick::print_instructions()
     printf("║  Right Stick X → omega       △ / ✕       → height ±      ║\n");
     printf("║                               □ / ○       → yaw ±        ║\n");
     printf("║                                                            ║\n");
-    printf("║  L1 → HOMING                 R1 → EMERGENCY STOP          ║\n");
+    printf("║  L1 → ACTIVATE               R1 → EMERGENCY STOP          ║\n");
     printf("║  L3 → reset wheels            R3 → reset body pose        ║\n");
     printf("║  PS → reset ALL                                            ║\n");
     printf("╚══════════════════════════════════════════════════════════════╝\n");

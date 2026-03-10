@@ -30,7 +30,7 @@ private:
     rclcpp::Subscription<pi3hat_moteus_int_msgs::msg::JointsStates>::SharedPtr state_sub_;
 
     // Service clients
-    rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr homing_client_;
+    rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr activate_client_;
     rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr emergency_client_;
 
     // Timer
