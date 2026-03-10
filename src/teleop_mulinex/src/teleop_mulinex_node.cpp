@@ -1,5 +1,7 @@
 #include "teleop_mulinex_node.hpp"
 
+#include <algorithm>
+
 namespace teleop_mulinex {
 
 TeleopMulinex::TeleopMulinex() : Node("teleop_mulinex")
@@ -8,16 +10,43 @@ TeleopMulinex::TeleopMulinex() : Node("teleop_mulinex")
     this->declare_parameter("angular_step", 0.1);
     this->declare_parameter("body_pos_step", 0.005);
     this->declare_parameter("body_ang_step", 0.02);
+    this->declare_parameter("max_height", 0.05);
+    this->declare_parameter("max_roll", 0.3);
+    this->declare_parameter("max_pitch", 0.3);
+    this->declare_parameter("max_yaw", 0.15);
+    this->declare_parameter("max_pos_x", 0.05);
+    this->declare_parameter("max_pos_y", 0.05);
 
     this->get_parameter("linear_step", linear_step_);
     this->get_parameter("angular_step", angular_step_);
     this->get_parameter("body_pos_step", body_pos_step_);
     this->get_parameter("body_ang_step", body_ang_step_);
+    this->get_parameter("max_height", max_height_);
+    this->get_parameter("max_roll", max_roll_);
+    this->get_parameter("max_pitch", max_pitch_);
+    this->get_parameter("max_yaw", max_yaw_);
+    this->get_parameter("max_pos_x", max_pos_x_);
+    this->get_parameter("max_pos_y", max_pos_y_);
 
     pose_pub_ = this->create_publisher<geometry_msgs::msg::Pose>(
         "/ik_controller/base_pose", 1);
+
+    // Twist publisher with BestEffort QoS and deadline (matching joystick)
+    rclcpp::QoS twist_qos(10);
+    twist_qos.best_effort();
+    twist_qos.deadline(std::chrono::milliseconds(45));  // timer period (40ms) + 5ms
     wheel_pub_ = this->create_publisher<geometry_msgs::msg::Twist>(
-        "/omni_controller/twist_cmd", 1);
+        "/omni_controller/twist_cmd", twist_qos);
+
+    // Service clients
+    activate_client_ = this->create_client<std_srvs::srv::SetBool>(
+        "/omni_controller/activate_srv");
+    emergency_client_ = this->create_client<std_srvs::srv::SetBool>(
+        "/omni_controller/emergency_srv");
+    homing_client_ = this->create_client<std_srvs::srv::SetBool>(
+        "/omni_controller/homing_srv");
+    ik_reinit_client_ = this->create_client<std_srvs::srv::SetBool>(
+        "/ik_controller/reinitialize_srv");
 
     timer_ = this->create_wall_timer(
         std::chrono::milliseconds(40),  // 25 Hz
@@ -61,29 +90,83 @@ bool TeleopMulinex::process_key(char c)
     case KEYCODE_o: wheel_omega_ -= angular_step_; return true;
 
     // Body pose - height
-    case KEYCODE_q: body_pos_[2] += body_pos_step_; return true;
-    case KEYCODE_e: body_pos_[2] -= body_pos_step_; return true;
+    case KEYCODE_q:
+        body_height_ = std::clamp(body_height_ + body_pos_step_, -max_height_, max_height_);
+        return true;
+    case KEYCODE_e:
+        body_height_ = std::clamp(body_height_ - body_pos_step_, -max_height_, max_height_);
+        return true;
 
-    // Body pose - pitch (around Y axis)
+    // Body pose - pitch
     case KEYCODE_i:
-        body_quat_ = quat_int(body_quat_, {0.0, -1.0, 0.0}, body_ang_step_);
+        body_pitch_ = std::clamp(body_pitch_ - body_ang_step_, -max_pitch_, max_pitch_);
         return true;
     case KEYCODE_k:
-        body_quat_ = quat_int(body_quat_, {0.0, 1.0, 0.0}, body_ang_step_);
+        body_pitch_ = std::clamp(body_pitch_ + body_ang_step_, -max_pitch_, max_pitch_);
         return true;
 
-    // Body pose - roll (around X axis)
+    // Body pose - roll
     case KEYCODE_j:
-        body_quat_ = quat_int(body_quat_, {-1.0, 0.0, 0.0}, body_ang_step_);
+        body_roll_ = std::clamp(body_roll_ - body_ang_step_, -max_roll_, max_roll_);
         return true;
     case KEYCODE_l:
-        body_quat_ = quat_int(body_quat_, {1.0, 0.0, 0.0}, body_ang_step_);
+        body_roll_ = std::clamp(body_roll_ + body_ang_step_, -max_roll_, max_roll_);
         return true;
 
-    // SPACE: reset everything
+    // Body pose - yaw
+    case KEYCODE_n:
+        body_yaw_ = std::clamp(body_yaw_ + body_ang_step_, -max_yaw_, max_yaw_);
+        return true;
+    case KEYCODE_m:
+        body_yaw_ = std::clamp(body_yaw_ - body_ang_step_, -max_yaw_, max_yaw_);
+        return true;
+
+    // Body pose - x position
+    case KEYCODE_r:
+        body_x_ = std::clamp(body_x_ + body_pos_step_, -max_pos_x_, max_pos_x_);
+        return true;
+    case KEYCODE_f:
+        body_x_ = std::clamp(body_x_ - body_pos_step_, -max_pos_x_, max_pos_x_);
+        return true;
+
+    // Body pose - y position
+    case KEYCODE_t:
+        body_y_ = std::clamp(body_y_ + body_pos_step_, -max_pos_y_, max_pos_y_);
+        return true;
+    case KEYCODE_g:
+        body_y_ = std::clamp(body_y_ - body_pos_step_, -max_pos_y_, max_pos_y_);
+        return true;
+
+    // Services
+    case KEYCODE_1:
+        // Activate: reset body pose, reinit IK, then activate
+        body_x_ = body_y_ = body_height_ = 0.0;
+        body_roll_ = body_pitch_ = body_yaw_ = 0.0;
+        call_service(ik_reinit_client_, "IK reinitialize", true);
+        call_service(activate_client_, "Activate", true);
+        return true;
+    case KEYCODE_2:
+        call_service(emergency_client_, "Emergency stop", true);
+        return true;
+    case KEYCODE_3:
+        call_service(homing_client_, "Homing", true);
+        return true;
+
+    // Reset wheels only
+    case KEYCODE_v:
+        wheel_vx_ = wheel_vy_ = wheel_omega_ = 0.0;
+        return true;
+
+    // Reset body only
+    case KEYCODE_b:
+        body_x_ = body_y_ = body_height_ = 0.0;
+        body_roll_ = body_pitch_ = body_yaw_ = 0.0;
+        return true;
+
+    // Reset all
     case KEYCODE_SPACE:
-        body_pos_ = {0.0, 0.0, 0.0};
-        body_quat_ = {0.0, 0.0, 0.0, 1.0};
+        body_x_ = body_y_ = body_height_ = 0.0;
+        body_roll_ = body_pitch_ = body_yaw_ = 0.0;
         wheel_vx_ = wheel_vy_ = wheel_omega_ = 0.0;
         return true;
     }
@@ -93,13 +176,15 @@ bool TeleopMulinex::process_key(char c)
 
 void TeleopMulinex::update_messages()
 {
-    pose_msg_.position.x = body_pos_[0];
-    pose_msg_.position.y = body_pos_[1];
-    pose_msg_.position.z = body_pos_[2];
-    pose_msg_.orientation.x = body_quat_[0];
-    pose_msg_.orientation.y = body_quat_[1];
-    pose_msg_.orientation.z = body_quat_[2];
-    pose_msg_.orientation.w = body_quat_[3];
+    auto q = quat_exp_vec({body_roll_, body_pitch_, body_yaw_});
+
+    pose_msg_.position.x = body_x_;
+    pose_msg_.position.y = body_y_;
+    pose_msg_.position.z = body_height_;
+    pose_msg_.orientation.x = q[0];
+    pose_msg_.orientation.y = q[1];
+    pose_msg_.orientation.z = q[2];
+    pose_msg_.orientation.w = q[3];
 
     wheel_msg_.linear.x = wheel_vx_;
     wheel_msg_.linear.y = wheel_vy_;
@@ -110,6 +195,20 @@ void TeleopMulinex::publish_messages()
 {
     pose_pub_->publish(pose_msg_);
     wheel_pub_->publish(wheel_msg_);
+}
+
+void TeleopMulinex::call_service(
+    rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr& client,
+    const std::string& name, bool value)
+{
+    if (client->service_is_ready()) {
+        auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
+        req->data = value;
+        client->async_send_request(req);
+        RCLCPP_INFO(this->get_logger(), "%s service called", name.c_str());
+    } else {
+        RCLCPP_WARN(this->get_logger(), "%s service not available", name.c_str());
+    }
 }
 
 void TeleopMulinex::print_instructions()
@@ -126,15 +225,26 @@ void TeleopMulinex::print_instructions()
     puts("  q/e: +/- height (z)");
     puts("  i/k: +/- pitch");
     puts("  j/l: +/- roll");
+    puts("  n/m: +/- yaw");
+    puts("  r/f: +/- body x position");
+    puts("  t/g: +/- body y position");
     puts("---------------------------");
+    puts("Services:");
+    puts("  1: activate (reset body + reinit IK)");
+    puts("  2: emergency stop");
+    puts("  3: homing");
+    puts("---------------------------");
+    puts("Resets:");
+    puts("  v: reset wheels only");
+    puts("  b: reset body only");
     puts("  SPACE: reset all to zero");
     puts("---------------------------");
     printf("Wheel velocity: vx=%.2f, vy=%.2f, omega=%.2f\n",
            wheel_vx_, wheel_vy_, wheel_omega_);
     printf("Body position: x=%.3f, y=%.3f, z=%.3f\n",
-           body_pos_[0], body_pos_[1], body_pos_[2]);
-    printf("Body orientation: qx=%.3f, qy=%.3f, qz=%.3f, qw=%.3f\n",
-           body_quat_[0], body_quat_[1], body_quat_[2], body_quat_[3]);
+           body_x_, body_y_, body_height_);
+    printf("Body orientation: roll=%.3f, pitch=%.3f, yaw=%.3f\n",
+           body_roll_, body_pitch_, body_yaw_);
 }
 
 } // namespace teleop_mulinex

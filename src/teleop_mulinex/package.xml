@@ -12,6 +12,7 @@
     <depend>rclcpp</depend>
     <depend>geometry_msgs</depend>
     <depend>omni_utils</depend>
+    <depend>std_srvs</depend>
 
     <export>
         <build_type>ament_cmake</build_type>
