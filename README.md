@@ -34,26 +34,8 @@ Run the container:
 
 As an alternative to `build.bash` and `run.bash`, you can use Docker Compose.
 
-Build the image:
-```shell
-docker compose -f docker/compose.yaml build
-```
+Build, start, attach, and stop the container with `make build`, `make start`, `make attach`, and `make stop` respectively.
 
-Run the container:
-```shell
-docker compose -f docker/compose.yaml up
-```
-
-Run the container in detached mode and open an interactive shell:
-```shell
-docker compose -f docker/compose.yaml up -d
-docker exec -it mulinex bash
-```
-
-Stop the container:
-```shell
-docker compose -f docker/compose.yaml down
-```
 
 ## Usage
 
@@ -74,20 +56,41 @@ check_chrony_100
 
 ### Launch Files
 
-Launch the lidar with
-```shell
-ros2 launch sllidar_ros2 view_sllidar_s2e_launch.py device_ip:=192.168.11.2
-```
+Start the hardware interface on the Raspberry.
+The updated hardware interface launch file automatically starts the necessary controllers.
 
 Activate the joystick with
 ```shell
 ros2 launch omni_mulinex_joystick joystick.launch.py
 ```
 
-Activate the state broadcaster with
+Launch the lidar with
 ```shell
-ros2 control load_controller state_broadcaster --set-state active
+ros2 launch sllidar_ros2 view_sllidar_s2e_launch.py device_ip:=192.168.11.2
 ```
+
+## Architecture
+
+`omni_mulinex_joystick` publishes:
+- `/omni_controller/twist_cmd` [`geometry_msgs/Twist`]: base velocity commands (linear x, y and angular z) from the joystick
+- `/ik_controller/base_pose` [`geometry_msgs/Pose`]: body pose commands (position and orientation) from the joystick
+
+`ik_controller` subscribes to:
+- `/ik_controller/base_pose` [`geometry_msgs/Pose`]: desired body pose from the joystick
+- `/omni_controller/joints_state` [`pi3hat_moteus_int_msgs/JointsStates`]: current joint states from the hardware interface
+
+and publishes:
+- `/omni_controller/legs_cmd` [`pi3hat_moteus_int_msgs/JointsCommand`]: leg joint position/velocity/effort commands computed via inverse kinematics
+
+The hardware interface (`omni_controller`) subscribes to:
+- `/omni_controller/twist_cmd` [`geometry_msgs/Twist`]: wheel velocity commands from the joystick
+- `/omni_controller/legs_cmd` [`pi3hat_moteus_int_msgs/JointsCommand`]: leg joint commands from the IK controller
+
+and publishes:
+- `/omni_controller/joints_state` [`pi3hat_moteus_int_msgs/JointsStates`]: joint feedback (position, velocity, effort, current, temperature)
+- `/omni_controller/odom` [`geometry_msgs/TwistStamped`]: odometry from wheel forward kinematics (optional)
+- `/omni_controller/performance` [`pi3hat_moteus_int_msgs/PacketPass`]: communication performance metrics (optional)
+- `/omni_controller/distributors_state` [`pi3hat_moteus_int_msgs/DistributorsState`]: power distributor state (optional)
 
 ## Acknowledgements
 

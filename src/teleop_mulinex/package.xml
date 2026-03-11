@@ -6,6 +6,8 @@
     <description>Keyboard teleoperation node for the Mulinex robot</description>
     <maintainer email="davide.debenedittis@gmail.com">Davide De Benedittis</maintainer>
     <license>TODO: License declaration</license>
+    
+    <author email="davide.debenedittis@gmail.com">Davide De Benedittis</author>
 
     <buildtool_depend>ament_cmake</buildtool_depend>
 

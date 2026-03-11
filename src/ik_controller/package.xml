@@ -6,6 +6,8 @@
   <description>Inverse kinematics controller for the Mulinex robot</description>
   <maintainer email="davide.debenedittis@gmail.com">Davide De Benedittis</maintainer>
   <license>TODO: License declaration</license>
+  
+  <author email="davide.debenedittis@gmail.com">Davide De Benedittis</author>
 
   <depend>pinocchio</depend>
   <depend>geometry_msgs</depend>
