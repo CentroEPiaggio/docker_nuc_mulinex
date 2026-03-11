@@ -69,11 +69,26 @@ Launch the lidar with
 ros2 launch sllidar_ros2 view_sllidar_s2e_launch.py device_ip:=192.168.11.2
 ```
 
+## Packages
+
+- **`ik_controller`** - Inverse kinematics controller using Pinocchio that computes joint positions from desired base pose commands, keeping foot positions fixed in the world frame.
+- **`mulinex_description`** - Robot URDF/Xacro description package providing kinematic and dynamic models for the Mulinex quadruped and OmniCar wheeled variants.
+- **`omni_bringup`** - Launch orchestration package that brings up the joystick teleop and IK controller nodes while recording key system topics to rosbag.
+- **`omni_mulinex_joystick`** - PS4 joystick teleoperation node that maps controller inputs to twist velocity commands and base pose targets for the omnidirectional robot.
+- **`omni_utils`** - Shared header-only C++ utility library providing quaternion mathematics functions used by teleoperation and control nodes.
+- **`omnicar_test`** - Test package containing trajectory generation utilities and linear trajectory planning for validation and simulation of robot motion.
+- **`pi3hat_moteus_int_msgs`** - Custom ROS 2 message definitions for pi3hat/moteus motor control communication (JointsCommand, JointsStates, OmniMulinexCommand, etc.).
+- **`robot_model`** - Pinocchio-based C++ and Python wrapper providing kinematics and dynamics computation for quadrupedal robots, loading configs from YAML and URDF. **Should be used for kinematics and dynamics computations across controllers.**
+- **`sllidar_ros2`** - ROS 2 driver for SLLIDAR LiDAR sensors that publishes laser scan data for mapping and localization.
+- **`teleop_mulinex`** - Keyboard teleoperation node for controlling the Mulinex robot with incremental adjustments to velocity and body pose. Implements the same functionality as the joystick teleop.
+
 ## Architecture
 
 `omni_mulinex_joystick` publishes:
 - `/omni_controller/twist_cmd` [`geometry_msgs/Twist`]: base velocity commands (linear x, y and angular z) from the joystick
 - `/ik_controller/base_pose` [`geometry_msgs/Pose`]: body pose commands (position and orientation) from the joystick
+
+---
 
 `ik_controller` subscribes to:
 - `/ik_controller/base_pose` [`geometry_msgs/Pose`]: desired body pose from the joystick
@@ -81,6 +96,8 @@ ros2 launch sllidar_ros2 view_sllidar_s2e_launch.py device_ip:=192.168.11.2
 
 and publishes:
 - `/omni_controller/legs_cmd` [`pi3hat_moteus_int_msgs/JointsCommand`]: leg joint position/velocity/effort commands computed via inverse kinematics
+
+---
 
 The hardware interface (`omni_controller`) subscribes to:
 - `/omni_controller/twist_cmd` [`geometry_msgs/Twist`]: wheel velocity commands from the joystick

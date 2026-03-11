@@ -3,7 +3,7 @@
 <package format="3">
     <name>omni_bringup</name>
     <version>0.0.0</version>
-    <description>Bringup launch files for the Mulinex robots</description>
+    <description>Launch orchestration package that brings up the joystick teleop and IK controller nodes while recording key system topics to rosbag.</description>
     <maintainer email="davide.debenedittis@gmail.com">Davide De Benedittis</maintainer>
     <license>TODO: License declaration</license>
 

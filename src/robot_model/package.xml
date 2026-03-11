@@ -3,7 +3,7 @@
 <package format="3">
     <name>robot_model</name>
     <version>0.0.0</version>
-    <description>Pinocchio wrapper for computing kinematics and dynamics of quadrupedal robots</description>
+    <description>Pinocchio-based C++ and Python wrapper providing kinematics and dynamics computation for quadrupedal robots, loading configs from YAML and URDF.</description>
     <maintainer email="davide.debenedittis@gmail.com">Davide De Benedittis</maintainer>
     <license>TODO: License declaration</license>
     

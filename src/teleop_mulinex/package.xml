@@ -3,7 +3,7 @@
 <package format="3">
     <name>teleop_mulinex</name>
     <version>0.0.0</version>
-    <description>Keyboard teleoperation node for the Mulinex robot</description>
+    <description>Keyboard teleoperation node for controlling the Mulinex robot with incremental adjustments to velocity and body pose. Implements the same functionality as the joystick teleop.</description>
     <maintainer email="davide.debenedittis@gmail.com">Davide De Benedittis</maintainer>
     <license>TODO: License declaration</license>
     

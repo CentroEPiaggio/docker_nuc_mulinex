@@ -3,7 +3,7 @@
 <package format="3">
     <name>omni_mulinex_joystick</name>
     <version>0.0.0</version>
-    <description>PS4 joystick teleop for the Omni Mulinex robot</description>
+    <description>PS4 joystick teleoperation node that maps controller inputs to twist velocity commands and base pose targets for the omnidirectional robot.</description>
     <maintainer email="davide.debenedittis@gmail.com">Davide De Benedittis</maintainer>
     <license>TODO: License declaration</license>
     

@@ -3,7 +3,7 @@
 <package format="3">
   <name>ik_controller</name>
   <version>0.0.0</version>
-  <description>Inverse kinematics controller for the Mulinex robot</description>
+  <description>Inverse kinematics controller using Pinocchio that computes joint positions from desired base pose commands, keeping foot positions fixed in the world frame.</description>
   <maintainer email="davide.debenedittis@gmail.com">Davide De Benedittis</maintainer>
   <license>TODO: License declaration</license>
   
