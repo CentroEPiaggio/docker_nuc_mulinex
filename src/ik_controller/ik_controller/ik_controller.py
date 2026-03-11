@@ -160,7 +160,8 @@ class IKController(Node):
             feet_pos_target.append(desired_pose.inverse().act(pos))
 
         # Iterative inverse kinematics (Newton-Raphson)
-        joint_ref = self.joint_ref.copy()
+        beta = 0.7  # 0..1, higher = follow measured more
+        joint_ref = beta * self.joint_positions + (1.0 - beta) * self.joint_ref
         n_jpl = self.n_joints_per_leg  # joints per leg (2 for mulinex)
 
         for it in range(self.ik_iterations):
