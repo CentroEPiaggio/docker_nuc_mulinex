@@ -1,9 +1,9 @@
 omni_mulinex_joystick:
   ros__parameters:
     timer_period_ms: 100
-    sup_vel_x: 1.0
-    sup_vel_y: 1.0
-    sup_omega: 2.0
+    sup_vel_x: 0.5
+    sup_vel_y: 0.5
+    sup_omega: 0.5
     height_step: 0.005
     roll_step: 0.02
     pitch_step: 0.02

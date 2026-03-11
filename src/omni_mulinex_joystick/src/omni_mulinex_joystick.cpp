@@ -79,6 +79,8 @@ OmniMulinexJoystick::OmniMulinexJoystick() : Node("omni_mulinex_joystick")
         "/omni_controller/homing_srv");
     ik_reinit_client_ = this->create_client<std_srvs::srv::SetBool>(
         "/ik_controller/reinitialize_srv");
+    ik_activate_client_ = this->create_client<std_srvs::srv::SetBool>(
+        "/ik_controller/activate_srv");
 
     // Timer
     timer_ = this->create_wall_timer(
@@ -116,11 +118,11 @@ void OmniMulinexJoystick::joy_callback(const sensor_msgs::msg::Joy::SharedPtr ms
     // L2 modifier (button 6)
     l2_held_ = (buttons.size() > 6) && buttons[6];
 
-    // ── D-pad: base x/y position (edge-triggered) ──────────────────────
+    // ── D-pad: base x/y position (edge-triggered, only when IK active) ─
     // D-pad up/down (axes[7]) → x position
     if (axes.size() > 7) {
         bool active = std::abs(axes[7]) > 0.5;
-        if (active && !prev_dpad_ud_active_) {
+        if (active && !prev_dpad_ud_active_ && ik_active_) {
             double sign = (axes[7] > 0.0) ? 1.0 : -1.0;
             body_x_ = std::clamp(body_x_ + sign * pos_step_, -max_pos_x_, max_pos_x_);
         }
@@ -130,7 +132,7 @@ void OmniMulinexJoystick::joy_callback(const sensor_msgs::msg::Joy::SharedPtr ms
     // D-pad left/right (axes[6]) → y position
     if (axes.size() > 6) {
         bool active = std::abs(axes[6]) > 0.5;
-        if (active && !prev_dpad_lr_active_) {
+        if (active && !prev_dpad_lr_active_ && ik_active_) {
             double sign = (axes[6] > 0.0) ? 1.0 : -1.0;
             body_y_ = std::clamp(body_y_ + sign * pos_step_, -max_pos_y_, max_pos_y_);
         }
@@ -138,21 +140,8 @@ void OmniMulinexJoystick::joy_callback(const sensor_msgs::msg::Joy::SharedPtr ms
     }
 
     // ── Services ────────────────────────────────────────────────────────
-    // L1 (btn 4) → activate (reset body pose + reinitialize IK first)
+    // L1 (btn 4) → activate hardware
     if (btn_rising(4)) {
-        // Reset body pose to zero
-        body_x_ = body_y_ = body_height_ = 0.0;
-        body_roll_ = body_pitch_ = body_yaw_ = 0.0;
-
-        // Reinitialize IK controller
-        if (ik_reinit_client_->service_is_ready()) {
-            auto ik_req = std::make_shared<std_srvs::srv::SetBool::Request>();
-            ik_req->data = true;
-            ik_reinit_client_->async_send_request(ik_req);
-            RCLCPP_INFO(this->get_logger(), "IK reinitialize service called");
-        }
-
-        // Activate controller
         auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
         req->data = true;
         if (activate_client_->service_is_ready()) {
@@ -163,8 +152,27 @@ void OmniMulinexJoystick::joy_callback(const sensor_msgs::msg::Joy::SharedPtr ms
         }
     }
 
-    // R1 (btn 5) → emergency stop
+    // □ (btn 3) → activate IK controller (reinitialize + start)
+    if (btn_rising(3)) {
+        // Reset body pose to zero for clean start
+        body_x_ = body_y_ = body_height_ = 0.0;
+        body_roll_ = body_pitch_ = body_yaw_ = 0.0;
+
+        if (ik_activate_client_->service_is_ready()) {
+            auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
+            req->data = true;
+            ik_activate_client_->async_send_request(req);
+            ik_active_ = true;
+            RCLCPP_INFO(this->get_logger(), "IK controller activated");
+        } else {
+            RCLCPP_WARN(this->get_logger(), "IK activate service not available");
+        }
+    }
+
+    // R1 (btn 5) → emergency stop (also deactivates IK)
     if (btn_rising(5)) {
+        deactivate_ik();
+
         auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
         req->data = true;
         if (emergency_client_->service_is_ready()) {
@@ -175,8 +183,10 @@ void OmniMulinexJoystick::joy_callback(const sensor_msgs::msg::Joy::SharedPtr ms
         }
     }
 
-    // ✕ (btn 0) → homing
+    // X (btn 0) → homing (also deactivates IK)
     if (btn_rising(0)) {
+        deactivate_ik();
+
         auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
         req->data = true;
         if (homing_client_->service_is_ready()) {
@@ -221,50 +231,74 @@ void OmniMulinexJoystick::timer_callback()
     // ── Twist (wheels) ──────────────────────────────────────────────────
     geometry_msgs::msg::Twist twist_msg;
     if (!l2_held_) {
-        // Normal: sticks → wheels, right stick Y → height rate
+        // Normal: sticks → wheels
         twist_msg.linear.x = joy_left_y_ * sup_vel_x_;
         twist_msg.linear.y = joy_left_x_ * sup_vel_y_;
         twist_msg.angular.z = joy_right_x_ * sup_omega_;
 
-        body_height_ = std::clamp(
-            body_height_ + joy_right_y_ * height_step_,
-            -max_height_, max_height_);
+        // Right stick Y → height rate (only when IK active)
+        if (ik_active_) {
+            body_height_ = std::clamp(
+                body_height_ + joy_right_y_ * height_step_,
+                -max_height_, max_height_);
+        }
     } else {
-        // L2 held: wheels zero, sticks → body orientation rate
+        // L2 held: wheels zero
         twist_msg.linear.x = 0.0;
         twist_msg.linear.y = 0.0;
         twist_msg.angular.z = 0.0;
 
-        body_roll_ = std::clamp(
-            body_roll_ + joy_left_x_ * roll_step_,
-            -max_roll_, max_roll_);
-        body_pitch_ = std::clamp(
-            body_pitch_ + joy_left_y_ * pitch_step_,
-            -max_pitch_, max_pitch_);
-        body_yaw_ = std::clamp(
-            body_yaw_ + joy_right_x_ * yaw_step_,
-            -max_yaw_, max_yaw_);
+        // Sticks → body orientation rate (only when IK active)
+        if (ik_active_) {
+            body_roll_ = std::clamp(
+                body_roll_ + joy_left_x_ * roll_step_,
+                -max_roll_, max_roll_);
+            body_pitch_ = std::clamp(
+                body_pitch_ + joy_left_y_ * pitch_step_,
+                -max_pitch_, max_pitch_);
+            body_yaw_ = std::clamp(
+                body_yaw_ + joy_right_x_ * yaw_step_,
+                -max_yaw_, max_yaw_);
+        }
     }
     twist_pub_->publish(twist_msg);
 
-    // ── Pose (body) ─────────────────────────────────────────────────────
-    auto q = quat_exp_vec({body_roll_, body_pitch_, body_yaw_});
+    // ── Pose (body) – only publish when IK is active ────────────────────
+    if (ik_active_) {
+        auto q = quat_exp_vec({body_roll_, body_pitch_, body_yaw_});
 
-    geometry_msgs::msg::Pose pose_msg;
-    pose_msg.position.x = body_x_;
-    pose_msg.position.y = body_y_;
-    pose_msg.position.z = body_height_;
-    pose_msg.orientation.x = q[0];
-    pose_msg.orientation.y = q[1];
-    pose_msg.orientation.z = q[2];
-    pose_msg.orientation.w = q[3];
-    pose_pub_->publish(pose_msg);
+        geometry_msgs::msg::Pose pose_msg;
+        pose_msg.position.x = body_x_;
+        pose_msg.position.y = body_y_;
+        pose_msg.position.z = body_height_;
+        pose_msg.orientation.x = q[0];
+        pose_msg.orientation.y = q[1];
+        pose_msg.orientation.z = q[2];
+        pose_msg.orientation.w = q[3];
+        pose_pub_->publish(pose_msg);
+    }
 }
 
 void OmniMulinexJoystick::state_callback(
     const pi3hat_moteus_int_msgs::msg::JointsStates::SharedPtr /*msg*/)
 {
     // State available for future logging/monitoring
+}
+
+void OmniMulinexJoystick::deactivate_ik()
+{
+    if (ik_active_) {
+        ik_active_ = false;
+        body_x_ = body_y_ = body_height_ = 0.0;
+        body_roll_ = body_pitch_ = body_yaw_ = 0.0;
+
+        if (ik_activate_client_->service_is_ready()) {
+            auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
+            req->data = false;
+            ik_activate_client_->async_send_request(req);
+            RCLCPP_INFO(this->get_logger(), "IK controller deactivated");
+        }
+    }
 }
 
 void OmniMulinexJoystick::print_instructions()
@@ -292,8 +326,8 @@ void OmniMulinexJoystick::print_instructions()
         "║                                                            ║\n"
         "║  BUTTONS                                                   ║\n"
         "║  ───────                                                   ║\n"
-        "║  L1 → ACTIVATE        R1 → EMERGENCY STOP                  ║\n"
-        "║  ✕  → HOMING                                               ║\n"
+        "║  L1 → ACTIVATE HW     R1 → EMERGENCY STOP                  ║\n"
+        "║  □  → ACTIVATE IK     ✕  → HOMING                          ║\n"
         "║  L3 → reset wheels    R3 → reset body pose                 ║\n"
         "║  PS → reset ALL                                            ║\n"
         "╚════════════════════════════════════════════════════════════╝"

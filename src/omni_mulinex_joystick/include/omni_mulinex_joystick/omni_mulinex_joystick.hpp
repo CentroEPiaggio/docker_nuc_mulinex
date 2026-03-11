@@ -19,6 +19,7 @@ private:
     void joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg);
     void timer_callback();
     void state_callback(const pi3hat_moteus_int_msgs::msg::JointsStates::SharedPtr msg);
+    void deactivate_ik();
     void print_instructions();
 
     // Publishers
@@ -34,6 +35,7 @@ private:
     rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr emergency_client_;
     rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr homing_client_;
     rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr ik_reinit_client_;
+    rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr ik_activate_client_;
 
     // Timer
     rclcpp::TimerBase::SharedPtr timer_;
@@ -63,6 +65,7 @@ private:
     double joy_right_x_ = 0.0;
     double joy_right_y_ = 0.0;
     bool l2_held_ = false;
+    bool ik_active_ = false;
 
     // State: body pose (accumulated via rate control)
     double body_x_ = 0.0;

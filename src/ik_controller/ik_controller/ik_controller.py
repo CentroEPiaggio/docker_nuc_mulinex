@@ -66,10 +66,16 @@ class IKController(Node):
             SetBool, '/ik_controller/reinitialize_srv', self.reinitialize_callback
         )
 
+        # Activate service
+        self.create_service(
+            SetBool, '/ik_controller/activate_srv', self.activate_callback
+        )
+
         # Timer
         self.timer = self.create_timer(1.0 / rate, self.timer_callback)
 
         # Internal variables
+        self.active = False
         self.initialized = False
         self.robot_model = RobotWrapper(self.robot_name)
 
@@ -96,6 +102,19 @@ class IKController(Node):
         response.message = 'IK controller will reinitialize from next joint states'
         return response
 
+    def activate_callback(self, request, response):
+        if request.data:
+            self.initialized = False  # Force reinitialization from current joint positions
+            self.active = True
+            self.get_logger().info('IK controller activated')
+            response.message = 'IK controller activated, will reinitialize from next joint states'
+        else:
+            self.active = False
+            self.get_logger().info('IK controller deactivated')
+            response.message = 'IK controller deactivated'
+        response.success = True
+        return response
+
     def joint_states_callback(self, msg: JointsStates):
         # Reorder joints to match the order in all_robots.yaml
         for i, joint_name in enumerate(msg.name):
@@ -103,8 +122,8 @@ class IKController(Node):
                 idx = self.robot_model.joint_names.index(joint_name)
                 self.joint_positions[idx] = msg.position[i]
 
-        # Initialize on first valid message
-        if not self.initialized and len(msg.position) > 0:
+        # Initialize on first valid message (only when active)
+        if self.active and not self.initialized and len(msg.position) > 0:
             self.initialized = True
             self.joint_ref = self.joint_positions.copy()
             self.robot_model.compute_kinematics(self.joint_positions)
@@ -118,7 +137,7 @@ class IKController(Node):
         )
 
     def timer_callback(self):
-        if not self.initialized:
+        if not self.active or not self.initialized:
             return
 
         # Clamp position command
