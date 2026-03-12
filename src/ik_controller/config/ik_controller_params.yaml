@@ -7,7 +7,7 @@ ik_controller:
     ik_alpha: 0.75
     pos_limit_x: 0.05
     pos_limit_y: 0.02
-    pos_limit_z: 0.05
+    pos_limit_z: 0.15
     ang_limit_roll: 0.3
     ang_limit_pitch: 0.3
     ang_limit_yaw: 0.15
