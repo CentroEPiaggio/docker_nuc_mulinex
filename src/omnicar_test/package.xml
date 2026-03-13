@@ -3,7 +3,7 @@
 <package format="3">
   <name>omnicar_test</name>
   <version>0.0.0</version>
-  <description>Omnicar test</description>
+  <description>Test package containing trajectory generation utilities and linear trajectory planning for validation and simulation of robot motion.</description>
   <maintainer email="lorenzo.martignetti@ing.unipi.it">Lorenzo Martignetti</maintainer>
   <license>Apache-2.0</license>
 

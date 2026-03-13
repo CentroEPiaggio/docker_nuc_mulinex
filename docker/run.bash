@@ -35,7 +35,7 @@ docker run \
     --env="RMW_IMPLEMENTATION=rmw_cyclonedds_cpp" \
     --env="RCUTILS_COLORIZED_OUTPUT=1" \
     `# Mount the folders in this directory.` \
-    -v ${PWD}:${PWD} \
+    -v ${PWD}:/home/$USER/mulinex_ws \
     -v ~/docker/${IMAGE_NAME}/Plotjuggler:/home/$USER/.config/PlotJuggler \
     `# Preserve bash history for autocomplete).` \
     --env="HISTFILE=/home/.bash_history" \

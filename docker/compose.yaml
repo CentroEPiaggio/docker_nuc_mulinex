@@ -1,7 +1,7 @@
 services:
   mulinex:
     build:
-      context: .
+      context: ../
       dockerfile: docker/DockerFile
       args:
         - BASE_IMAGE=osrf/ros
@@ -49,7 +49,7 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - /tmp/.docker.xauth:/tmp/.docker.xauth:rw
       # Workspace
-      - ./:/home/${USER}/mulinex_ws/
+      - ../:/home/${USER}/mulinex_ws/
       # Devices & shared memory (ROS 2 DDS)
       - /dev:/dev
       - /dev/shm:/dev/shm
