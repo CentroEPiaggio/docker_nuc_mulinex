@@ -5,7 +5,7 @@
 
 namespace omni_mulinex_joystick {
 
-OmniMulinexJoystick::OmniMulinexJoystick() : Node("omni_mulinex_joystick")
+OmniMulinexJoystick::OmniMulinexJoystick(): Node("omni_mulinex_joystick")
 {
     print_instructions();
 
@@ -51,41 +51,40 @@ OmniMulinexJoystick::OmniMulinexJoystick() : Node("omni_mulinex_joystick")
     rclcpp::QoS twist_qos(10);
     twist_qos.best_effort();
     twist_qos.deadline(std::chrono::milliseconds(timer_period_ms_ + 5));
-    twist_pub_ = this->create_publisher<geometry_msgs::msg::Twist>(
-        "/omni_controller/twist_cmd", twist_qos);
+    twist_pub_ =
+        this->create_publisher<geometry_msgs::msg::Twist>("/omni_controller/twist_cmd", twist_qos);
 
     // Pose publisher
-    pose_pub_ = this->create_publisher<geometry_msgs::msg::Pose>(
-        "/ik_controller/base_pose", 1);
+    pose_pub_ = this->create_publisher<geometry_msgs::msg::Pose>("/ik_controller/base_pose", 1);
 
     // Joy subscriber
     joy_sub_ = this->create_subscription<sensor_msgs::msg::Joy>(
-        "joy", 10,
-        std::bind(&OmniMulinexJoystick::joy_callback, this, std::placeholders::_1));
+        "joy", 10, std::bind(&OmniMulinexJoystick::joy_callback, this, std::placeholders::_1)
+    );
 
     // State subscriber (optional)
     if (subscribe_state_) {
         state_sub_ = this->create_subscription<pi3hat_moteus_int_msgs::msg::JointsStates>(
             "/omni_controller/joints_state", 10,
-            std::bind(&OmniMulinexJoystick::state_callback, this, std::placeholders::_1));
+            std::bind(&OmniMulinexJoystick::state_callback, this, std::placeholders::_1)
+        );
     }
 
     // Service clients
-    activate_client_ = this->create_client<std_srvs::srv::SetBool>(
-        "/omni_controller/activate_srv");
-    emergency_client_ = this->create_client<std_srvs::srv::SetBool>(
-        "/omni_controller/emergency_srv");
-    homing_client_ = this->create_client<std_srvs::srv::SetBool>(
-        "/omni_controller/homing_srv");
-    ik_reinit_client_ = this->create_client<std_srvs::srv::SetBool>(
-        "/ik_controller/reinitialize_srv");
-    ik_activate_client_ = this->create_client<std_srvs::srv::SetBool>(
-        "/ik_controller/activate_srv");
+    activate_client_ = this->create_client<std_srvs::srv::SetBool>("/omni_controller/activate_srv");
+    emergency_client_ =
+        this->create_client<std_srvs::srv::SetBool>("/omni_controller/emergency_srv");
+    homing_client_ = this->create_client<std_srvs::srv::SetBool>("/omni_controller/homing_srv");
+    ik_reinit_client_ =
+        this->create_client<std_srvs::srv::SetBool>("/ik_controller/reinitialize_srv");
+    ik_activate_client_ =
+        this->create_client<std_srvs::srv::SetBool>("/ik_controller/activate_srv");
 
     // Timer
     timer_ = this->create_wall_timer(
         std::chrono::milliseconds(timer_period_ms_),
-        std::bind(&OmniMulinexJoystick::timer_callback, this));
+        std::bind(&OmniMulinexJoystick::timer_callback, this)
+    );
 }
 
 void OmniMulinexJoystick::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg)
@@ -99,21 +98,24 @@ void OmniMulinexJoystick::joy_callback(const sensor_msgs::msg::Joy::SharedPtr ms
     }
 
     // Helper: apply deadzone
-    auto dz = [this](double val) -> double {
-        return (std::abs(val) < deadzone_) ? 0.0 : val;
-    };
+    auto dz = [this](double val) -> double { return (std::abs(val) < deadzone_) ? 0.0 : val; };
 
     // Helper: rising edge detection for buttons
     auto btn_rising = [&](size_t idx) -> bool {
-        if (idx >= buttons.size()) return false;
+        if (idx >= buttons.size())
+            return false;
         return buttons[idx] && (idx >= prev_buttons_.size() || !prev_buttons_[idx]);
     };
 
     // ── Store analog stick values ───────────────────────────────────────
-    if (axes.size() > 0) joy_left_x_ = dz(axes[0]);
-    if (axes.size() > 1) joy_left_y_ = dz(axes[1]);
-    if (axes.size() > 3) joy_right_x_ = dz(axes[3]);
-    if (axes.size() > 4) joy_right_y_ = dz(axes[4]);
+    if (axes.size() > 0)
+        joy_left_x_ = dz(axes[0]);
+    if (axes.size() > 1)
+        joy_left_y_ = dz(axes[1]);
+    if (axes.size() > 3)
+        joy_right_x_ = dz(axes[3]);
+    if (axes.size() > 4)
+        joy_right_y_ = dz(axes[4]);
 
     // L2 modifier (button 6)
     l2_held_ = (buttons.size() > 6) && buttons[6];
@@ -238,9 +240,8 @@ void OmniMulinexJoystick::timer_callback()
 
         // Right stick Y → height rate (only when IK active)
         if (ik_active_) {
-            body_height_ = std::clamp(
-                body_height_ + joy_right_y_ * height_step_,
-                -max_height_, max_height_);
+            body_height_ =
+                std::clamp(body_height_ + joy_right_y_ * height_step_, -max_height_, max_height_);
         }
     } else {
         // L2 held: wheels zero
@@ -250,15 +251,10 @@ void OmniMulinexJoystick::timer_callback()
 
         // Sticks → body orientation rate (only when IK active)
         if (ik_active_) {
-            body_roll_ = std::clamp(
-                body_roll_ + joy_left_x_ * roll_step_,
-                -max_roll_, max_roll_);
-            body_pitch_ = std::clamp(
-                body_pitch_ + joy_left_y_ * pitch_step_,
-                -max_pitch_, max_pitch_);
-            body_yaw_ = std::clamp(
-                body_yaw_ + joy_right_x_ * yaw_step_,
-                -max_yaw_, max_yaw_);
+            body_roll_ = std::clamp(body_roll_ + joy_left_x_ * roll_step_, -max_roll_, max_roll_);
+            body_pitch_ =
+                std::clamp(body_pitch_ + joy_left_y_ * pitch_step_, -max_pitch_, max_pitch_);
+            body_yaw_ = std::clamp(body_yaw_ + joy_right_x_ * yaw_step_, -max_yaw_, max_yaw_);
         }
     }
     twist_pub_->publish(twist_msg);
@@ -279,8 +275,8 @@ void OmniMulinexJoystick::timer_callback()
     }
 }
 
-void OmniMulinexJoystick::state_callback(
-    const pi3hat_moteus_int_msgs::msg::JointsStates::SharedPtr /*msg*/)
+void OmniMulinexJoystick::
+    state_callback(const pi3hat_moteus_int_msgs::msg::JointsStates::SharedPtr /*msg*/)
 {
     // State available for future logging/monitoring
 }
@@ -303,35 +299,36 @@ void OmniMulinexJoystick::deactivate_ik()
 
 void OmniMulinexJoystick::print_instructions()
 {
-    RCLCPP_INFO(this->get_logger(),
-        "\n\033[32m"
-        "╔════════════════════════════════════════════════════════════╗\n"
-        "║              Omni Mulinex Joystick (PS4)                   ║\n"
-        "╠════════════════════════════════════════════════════════════╣\n"
-        "║  NORMAL MODE                                               ║\n"
-        "║  ───────────                                               ║\n"
-        "║  Left Stick X/Y   → wheel vy / vx                          ║\n"
-        "║  Right Stick X    → wheel omega                            ║\n"
-        "║  Right Stick Y    → base height (rate)                     ║\n"
-        "║                                                            ║\n"
-        "║  L2 + STICKS (body orientation)                            ║\n"
-        "║  ──────────────────────────────                            ║\n"
-        "║  L2 + Left Stick  → roll / pitch (rate)                    ║\n"
-        "║  L2 + Right Stick → yaw (rate)                             ║\n"
-        "║                                                            ║\n"
-        "║  D-PAD (base position)                                     ║\n"
-        "║  ────────────────────                                      ║\n"
-        "║  D-Pad U/D → x position (step)                             ║\n"
-        "║  D-Pad L/R → y position (step)                             ║\n"
-        "║                                                            ║\n"
-        "║  BUTTONS                                                   ║\n"
-        "║  ───────                                                   ║\n"
-        "║  L1 → ACTIVATE HW     R1 → EMERGENCY STOP                  ║\n"
-        "║  □  → ACTIVATE IK     ✕  → HOMING                          ║\n"
-        "║  L3 → reset wheels    R3 → reset body pose                 ║\n"
-        "║  PS → reset ALL                                            ║\n"
-        "╚════════════════════════════════════════════════════════════╝"
-        "\033[0m");
+    RCLCPP_INFO(
+        this->get_logger(), "\n\033[32m"
+                            "╔════════════════════════════════════════════════════════════╗\n"
+                            "║              Omni Mulinex Joystick (PS4)                   ║\n"
+                            "╠════════════════════════════════════════════════════════════╣\n"
+                            "║  NORMAL MODE                                               ║\n"
+                            "║  ───────────                                               ║\n"
+                            "║  Left Stick X/Y   → wheel vy / vx                          ║\n"
+                            "║  Right Stick X    → wheel omega                            ║\n"
+                            "║  Right Stick Y    → base height (rate)                     ║\n"
+                            "║                                                            ║\n"
+                            "║  L2 + STICKS (body orientation)                            ║\n"
+                            "║  ──────────────────────────────                            ║\n"
+                            "║  L2 + Left Stick  → roll / pitch (rate)                    ║\n"
+                            "║  L2 + Right Stick → yaw (rate)                             ║\n"
+                            "║                                                            ║\n"
+                            "║  D-PAD (base position)                                     ║\n"
+                            "║  ────────────────────                                      ║\n"
+                            "║  D-Pad U/D → x position (step)                             ║\n"
+                            "║  D-Pad L/R → y position (step)                             ║\n"
+                            "║                                                            ║\n"
+                            "║  BUTTONS                                                   ║\n"
+                            "║  ───────                                                   ║\n"
+                            "║  L1 → ACTIVATE HW     R1 → EMERGENCY STOP                  ║\n"
+                            "║  □  → ACTIVATE IK     ✕  → HOMING                          ║\n"
+                            "║  L3 → reset wheels    R3 → reset body pose                 ║\n"
+                            "║  PS → reset ALL                                            ║\n"
+                            "╚════════════════════════════════════════════════════════════╝"
+                            "\033[0m"
+    );
 }
 
 } // namespace omni_mulinex_joystick

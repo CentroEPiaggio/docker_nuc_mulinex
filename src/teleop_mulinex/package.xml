@@ -6,7 +6,7 @@
     <description>Keyboard teleoperation node for controlling the Mulinex robot with incremental adjustments to velocity and body pose. Implements the same functionality as the joystick teleop.</description>
     <maintainer email="davide.debenedittis@gmail.com">Davide De Benedittis</maintainer>
     <license>TODO: License declaration</license>
-    
+
     <author email="davide.debenedittis@gmail.com">Davide De Benedittis</author>
 
     <buildtool_depend>ament_cmake</buildtool_depend>

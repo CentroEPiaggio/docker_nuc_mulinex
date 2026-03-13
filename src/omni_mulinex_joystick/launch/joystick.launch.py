@@ -1,7 +1,8 @@
+import os
+
+from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch_ros.actions import Node
-from ament_index_python.packages import get_package_share_directory
-import os
 
 
 def generate_launch_description():
@@ -11,17 +12,19 @@ def generate_launch_description():
         'joystick_params.yaml',
     )
 
-    return LaunchDescription([
-        Node(
-            package='joy',
-            executable='joy_node',
-            name='joy_node',
-        ),
-        Node(
-            package='omni_mulinex_joystick',
-            executable='omni_mulinex_joystick_node',
-            name='omni_mulinex_joystick',
-            parameters=[config],
-            output='screen',
-        ),
-    ])
+    return LaunchDescription(
+        [
+            Node(
+                package='joy',
+                executable='joy_node',
+                name='joy_node',
+            ),
+            Node(
+                package='omni_mulinex_joystick',
+                executable='omni_mulinex_joystick_node',
+                name='omni_mulinex_joystick',
+                parameters=[config],
+                output='screen',
+            ),
+        ]
+    )

@@ -15,7 +15,7 @@ mulinex:
   urdf_path: /urdf/mulinex.xacro
   urdf_args:
     feet_type: normal
-    use_gazebo: 'false'
+    use_gazebo: "false"
   base_name: base_link
   n_joints_per_leg: 2
   feet_names:

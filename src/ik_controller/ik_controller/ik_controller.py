@@ -2,12 +2,14 @@ import copy
 
 import numpy as np
 import pinocchio as pin
-import rclpy
-from geometry_msgs.msg import Pose
-from pi3hat_moteus_int_msgs.msg import JointsCommand, JointsStates
-from rclpy.node import Node
 from robot_model.robot_wrapper import RobotWrapper
 from std_srvs.srv import SetBool
+
+import rclpy
+from geometry_msgs.msg import Pose
+from rclpy.node import Node
+
+from pi3hat_moteus_int_msgs.msg import JointsCommand, JointsStates
 
 
 class IKController(Node):
@@ -35,16 +37,20 @@ class IKController(Node):
         self.ik_iterations = self.get_parameter('ik_iterations').get_parameter_value().integer_value
         self.ik_gain = self.get_parameter('ik_gain').get_parameter_value().double_value
         self.ik_alpha = self.get_parameter('ik_alpha').get_parameter_value().double_value
-        self.pos_limits = np.array([
-            self.get_parameter('pos_limit_x').get_parameter_value().double_value,
-            self.get_parameter('pos_limit_y').get_parameter_value().double_value,
-            self.get_parameter('pos_limit_z').get_parameter_value().double_value,
-        ])
-        self.ang_limits = np.array([
-            self.get_parameter('ang_limit_roll').get_parameter_value().double_value,
-            self.get_parameter('ang_limit_pitch').get_parameter_value().double_value,
-            self.get_parameter('ang_limit_yaw').get_parameter_value().double_value,
-        ])
+        self.pos_limits = np.array(
+            [
+                self.get_parameter('pos_limit_x').get_parameter_value().double_value,
+                self.get_parameter('pos_limit_y').get_parameter_value().double_value,
+                self.get_parameter('pos_limit_z').get_parameter_value().double_value,
+            ]
+        )
+        self.ang_limits = np.array(
+            [
+                self.get_parameter('ang_limit_roll').get_parameter_value().double_value,
+                self.get_parameter('ang_limit_pitch').get_parameter_value().double_value,
+                self.get_parameter('ang_limit_yaw').get_parameter_value().double_value,
+            ]
+        )
         self.kp_scale = self.get_parameter('kp_scale').get_parameter_value().double_value
         self.kd_scale = self.get_parameter('kd_scale').get_parameter_value().double_value
 
@@ -62,14 +68,10 @@ class IKController(Node):
         )
 
         # Reinitialize service
-        self.create_service(
-            SetBool, '/ik_controller/reinitialize_srv', self.reinitialize_callback
-        )
+        self.create_service(SetBool, '/ik_controller/reinitialize_srv', self.reinitialize_callback)
 
         # Activate service
-        self.create_service(
-            SetBool, '/ik_controller/activate_srv', self.activate_callback
-        )
+        self.create_service(SetBool, '/ik_controller/activate_srv', self.activate_callback)
 
         # Timer
         self.timer = self.create_timer(1.0 / rate, self.timer_callback)
@@ -173,8 +175,7 @@ class IKController(Node):
                 residual = feet_pos_target[i] - feet_pos[i]
                 delta_q = np.linalg.pinv(J_feet[i]).dot(residual)
                 joint_ref[n_jpl * i : n_jpl * (i + 1)] += (
-                    delta_q[6 + n_jpl * i : 6 + n_jpl * (i + 1)]
-                    * self.ik_gain * self.ik_alpha ** it
+                    delta_q[6 + n_jpl * i : 6 + n_jpl * (i + 1)] * self.ik_gain * self.ik_alpha**it
                 )
 
         self.joint_ref = joint_ref

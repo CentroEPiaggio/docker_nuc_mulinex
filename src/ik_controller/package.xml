@@ -6,7 +6,7 @@
   <description>Inverse kinematics controller using Pinocchio that computes joint positions from desired base pose commands, keeping foot positions fixed in the world frame.</description>
   <maintainer email="davide.debenedittis@gmail.com">Davide De Benedittis</maintainer>
   <license>TODO: License declaration</license>
-  
+
   <author email="davide.debenedittis@gmail.com">Davide De Benedittis</author>
 
   <depend>pinocchio</depend>

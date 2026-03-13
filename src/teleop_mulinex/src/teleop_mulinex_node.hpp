@@ -1,12 +1,12 @@
 #pragma once
 
-#include "teleop_mulinex/keyboard_reader.hpp"
 #include "omni_utils/quat_math.h"
+#include "teleop_mulinex/keyboard_reader.hpp"
 
 #include "geometry_msgs/msg/pose.hpp"
 #include "geometry_msgs/msg/twist.hpp"
-#include "std_srvs/srv/set_bool.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "std_srvs/srv/set_bool.hpp"
 
 #define KEYCODE_w 0x77
 #define KEYCODE_s 0x73
@@ -35,7 +35,7 @@
 
 namespace teleop_mulinex {
 
-class TeleopMulinex : public rclcpp::Node {
+class TeleopMulinex: public rclcpp::Node {
 public:
     TeleopMulinex();
     void shutdown() { keyboard_reader_.shutdown(); }
@@ -47,8 +47,9 @@ private:
     void publish_messages();
     void print_instructions();
     void call_service(
-        rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr& client,
-        const std::string& name, bool value);
+        rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr& client, const std::string& name,
+        bool value
+    );
 
     KeyboardReader keyboard_reader_;
 

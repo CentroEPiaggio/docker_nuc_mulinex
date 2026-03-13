@@ -12,20 +12,11 @@ find_package(rosidl_default_generators REQUIRED)
 find_package(std_msgs REQUIRED)
 
 set(msg_files
-    "msg/PacketPass.msg"
-    "msg/JointsStates.msg"
-    "msg/JointsCommand.msg"
-    "msg/OmniMulinexCommand.msg"
-    "msg/DistributorsState.msg"
-)
+    "msg/PacketPass.msg" "msg/JointsStates.msg" "msg/JointsCommand.msg"
+    "msg/OmniMulinexCommand.msg" "msg/DistributorsState.msg")
 
-rosidl_generate_interfaces(${PROJECT_NAME}
-    ${msg_files}
-    DEPENDENCIES 
-    std_msgs
-    builtin_interfaces
-    ADD_LINTER_TESTS
-)
+rosidl_generate_interfaces(${PROJECT_NAME} ${msg_files} DEPENDENCIES std_msgs
+                           builtin_interfaces ADD_LINTER_TESTS)
 
 ament_export_dependencies(rosidl_default_runtime)
 ament_package()

@@ -5,6 +5,7 @@ import numpy as np
 import pinocchio as pin
 import xacro
 import yaml
+
 from ament_index_python.packages import get_package_share_directory
 
 
@@ -16,7 +17,7 @@ class RobotWrapper(pin.RobotWrapper):
 
         yaml_path = package_share_directory + '/robots/all_robots.yaml'
 
-        with open(yaml_path, 'r') as f:
+        with open(yaml_path) as f:
             doc = yaml.load(f, yaml.SafeLoader)
 
         pkg_name = doc[robot_name]['pkg_name']
@@ -35,9 +36,7 @@ class RobotWrapper(pin.RobotWrapper):
             doc_xacro = xacro.process_file(full_urdf_path, mappings=mappings)
             urdf_xml = doc_xacro.toprettyxml(indent='  ')
 
-            with tempfile.NamedTemporaryFile(
-                mode='w', suffix='.urdf', delete=False
-            ) as tmp_file:
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.urdf', delete=False) as tmp_file:
                 tmp_file.write(urdf_xml)
                 tmp_urdf_path = tmp_file.name
 
@@ -101,8 +100,6 @@ class RobotWrapper(pin.RobotWrapper):
         feet_jacobian = [None for _ in self.feet_names]
         for i, foot_name in enumerate(self.feet_names):
             frame_id = self.model.getFrameId(foot_name)
-            feet_jacobian[i] = self.getFrameJacobian(
-                frame_id, pin.LOCAL_WORLD_ALIGNED
-            )[0:3, :]
+            feet_jacobian[i] = self.getFrameJacobian(frame_id, pin.LOCAL_WORLD_ALIGNED)[0:3, :]
 
         return feet_jacobian

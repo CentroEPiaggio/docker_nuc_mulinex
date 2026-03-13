@@ -4,7 +4,7 @@
 
 namespace teleop_mulinex {
 
-TeleopMulinex::TeleopMulinex() : Node("teleop_mulinex")
+TeleopMulinex::TeleopMulinex(): Node("teleop_mulinex")
 {
     this->declare_parameter("linear_step", 0.1);
     this->declare_parameter("angular_step", 0.1);
@@ -28,29 +28,27 @@ TeleopMulinex::TeleopMulinex() : Node("teleop_mulinex")
     this->get_parameter("max_pos_x", max_pos_x_);
     this->get_parameter("max_pos_y", max_pos_y_);
 
-    pose_pub_ = this->create_publisher<geometry_msgs::msg::Pose>(
-        "/ik_controller/base_pose", 1);
+    pose_pub_ = this->create_publisher<geometry_msgs::msg::Pose>("/ik_controller/base_pose", 1);
 
     // Twist publisher with BestEffort QoS and deadline (matching joystick)
     rclcpp::QoS twist_qos(10);
     twist_qos.best_effort();
-    twist_qos.deadline(std::chrono::milliseconds(45));  // timer period (40ms) + 5ms
-    wheel_pub_ = this->create_publisher<geometry_msgs::msg::Twist>(
-        "/omni_controller/twist_cmd", twist_qos);
+    twist_qos.deadline(std::chrono::milliseconds(45)); // timer period (40ms) + 5ms
+    wheel_pub_ =
+        this->create_publisher<geometry_msgs::msg::Twist>("/omni_controller/twist_cmd", twist_qos);
 
     // Service clients
-    activate_client_ = this->create_client<std_srvs::srv::SetBool>(
-        "/omni_controller/activate_srv");
-    emergency_client_ = this->create_client<std_srvs::srv::SetBool>(
-        "/omni_controller/emergency_srv");
-    homing_client_ = this->create_client<std_srvs::srv::SetBool>(
-        "/omni_controller/homing_srv");
-    ik_reinit_client_ = this->create_client<std_srvs::srv::SetBool>(
-        "/ik_controller/reinitialize_srv");
+    activate_client_ = this->create_client<std_srvs::srv::SetBool>("/omni_controller/activate_srv");
+    emergency_client_ =
+        this->create_client<std_srvs::srv::SetBool>("/omni_controller/emergency_srv");
+    homing_client_ = this->create_client<std_srvs::srv::SetBool>("/omni_controller/homing_srv");
+    ik_reinit_client_ =
+        this->create_client<std_srvs::srv::SetBool>("/ik_controller/reinitialize_srv");
 
     timer_ = this->create_wall_timer(
-        std::chrono::milliseconds(40),  // 25 Hz
-        std::bind(&TeleopMulinex::teleop_callback, this));
+        std::chrono::milliseconds(40), // 25 Hz
+        std::bind(&TeleopMulinex::teleop_callback, this)
+    );
 
     update_messages();
     print_instructions();
@@ -82,12 +80,24 @@ bool TeleopMulinex::process_key(char c)
 {
     switch (c) {
     // Wheel velocities
-    case KEYCODE_w: wheel_vx_ += linear_step_; return true;
-    case KEYCODE_s: wheel_vx_ -= linear_step_; return true;
-    case KEYCODE_a: wheel_vy_ += linear_step_; return true;
-    case KEYCODE_d: wheel_vy_ -= linear_step_; return true;
-    case KEYCODE_u: wheel_omega_ += angular_step_; return true;
-    case KEYCODE_o: wheel_omega_ -= angular_step_; return true;
+    case KEYCODE_w:
+        wheel_vx_ += linear_step_;
+        return true;
+    case KEYCODE_s:
+        wheel_vx_ -= linear_step_;
+        return true;
+    case KEYCODE_a:
+        wheel_vy_ += linear_step_;
+        return true;
+    case KEYCODE_d:
+        wheel_vy_ -= linear_step_;
+        return true;
+    case KEYCODE_u:
+        wheel_omega_ += angular_step_;
+        return true;
+    case KEYCODE_o:
+        wheel_omega_ -= angular_step_;
+        return true;
 
     // Body pose - height
     case KEYCODE_q:
@@ -198,8 +208,8 @@ void TeleopMulinex::publish_messages()
 }
 
 void TeleopMulinex::call_service(
-    rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr& client,
-    const std::string& name, bool value)
+    rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr& client, const std::string& name, bool value
+)
 {
     if (client->service_is_ready()) {
         auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
@@ -213,7 +223,7 @@ void TeleopMulinex::call_service(
 
 void TeleopMulinex::print_instructions()
 {
-    puts("\033[2J\033[1;1H");  // clear terminal
+    puts("\033[2J\033[1;1H"); // clear terminal
     puts("Mulinex Teleop - Reading from keyboard");
     puts("---------------------------");
     puts("Wheel velocity commands:");
@@ -239,12 +249,11 @@ void TeleopMulinex::print_instructions()
     puts("  b: reset body only");
     puts("  SPACE: reset all to zero");
     puts("---------------------------");
-    printf("Wheel velocity: vx=%.2f, vy=%.2f, omega=%.2f\n",
-           wheel_vx_, wheel_vy_, wheel_omega_);
-    printf("Body position: x=%.3f, y=%.3f, z=%.3f\n",
-           body_x_, body_y_, body_height_);
-    printf("Body orientation: roll=%.3f, pitch=%.3f, yaw=%.3f\n",
-           body_roll_, body_pitch_, body_yaw_);
+    printf("Wheel velocity: vx=%.2f, vy=%.2f, omega=%.2f\n", wheel_vx_, wheel_vy_, wheel_omega_);
+    printf("Body position: x=%.3f, y=%.3f, z=%.3f\n", body_x_, body_y_, body_height_);
+    printf(
+        "Body orientation: roll=%.3f, pitch=%.3f, yaw=%.3f\n", body_roll_, body_pitch_, body_yaw_
+    );
 }
 
 } // namespace teleop_mulinex

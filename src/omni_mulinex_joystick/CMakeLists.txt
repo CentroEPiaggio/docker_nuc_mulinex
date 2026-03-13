@@ -19,16 +19,21 @@ find_package(pi3hat_moteus_int_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(omni_utils REQUIRED)
 
-add_executable(omni_mulinex_joystick_node
-    src/omni_mulinex_joystick.cpp
-    src/main.cpp
-)
+add_executable(omni_mulinex_joystick_node src/omni_mulinex_joystick.cpp
+                                          src/main.cpp)
 
-target_include_directories(omni_mulinex_joystick_node
+target_include_directories(
+    omni_mulinex_joystick_node
     PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
-ament_target_dependencies(omni_mulinex_joystick_node
-    rclcpp sensor_msgs geometry_msgs pi3hat_moteus_int_msgs std_srvs omni_utils)
+ament_target_dependencies(
+    omni_mulinex_joystick_node
+    rclcpp
+    sensor_msgs
+    geometry_msgs
+    pi3hat_moteus_int_msgs
+    std_srvs
+    omni_utils)
 
 install(TARGETS omni_mulinex_joystick_node DESTINATION lib/${PROJECT_NAME})
 

@@ -87,8 +87,8 @@ RobotWrapper::RobotWrapper(const std::string& robot_name)
         int ret = pclose(pipe);
         if (ret != 0) {
             throw std::runtime_error(
-                "RobotWrapper: xacro command failed with exit code " + std::to_string(ret) +
-                ": " + cmd
+                "RobotWrapper: xacro command failed with exit code " + std::to_string(ret) + ": " +
+                cmd
             );
         }
 

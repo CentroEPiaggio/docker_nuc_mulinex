@@ -6,7 +6,7 @@
     <description>Pinocchio-based C++ and Python wrapper providing kinematics and dynamics computation for quadrupedal robots, loading configs from YAML and URDF.</description>
     <maintainer email="davide.debenedittis@gmail.com">Davide De Benedittis</maintainer>
     <license>TODO: License declaration</license>
-    
+
     <author email="davide.debenedittis@gmail.com">Davide De Benedittis</author>
 
     <buildtool_depend>ament_cmake</buildtool_depend>

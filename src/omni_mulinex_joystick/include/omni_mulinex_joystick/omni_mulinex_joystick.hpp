@@ -11,7 +11,7 @@
 
 namespace omni_mulinex_joystick {
 
-class OmniMulinexJoystick : public rclcpp::Node {
+class OmniMulinexJoystick: public rclcpp::Node {
 public:
     OmniMulinexJoystick();
 

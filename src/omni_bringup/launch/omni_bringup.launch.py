@@ -29,7 +29,9 @@ def generate_launch_description():
 
     rosbag_record = ExecuteProcess(
         cmd=[
-            'ros2', 'bag', 'record',
+            'ros2',
+            'bag',
+            'record',
             '/omni_controller/joints_state',
             '/omni_controller/legs_cmd',
             '/omni_controller/twist_cmd',
@@ -39,8 +41,10 @@ def generate_launch_description():
         output='screen',
     )
 
-    return LaunchDescription([
-        joystick_launch,
-        ik_controller_launch,
-        rosbag_record,
-    ])
+    return LaunchDescription(
+        [
+            joystick_launch,
+            ik_controller_launch,
+            rosbag_record,
+        ]
+    )

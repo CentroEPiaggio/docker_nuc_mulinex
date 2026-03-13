@@ -16,16 +16,14 @@ find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(omni_utils REQUIRED)
 find_package(std_srvs REQUIRED)
-add_executable(teleop_mulinex_node
-    src/teleop_mulinex_node.cpp
-    src/main.cpp
-)
+add_executable(teleop_mulinex_node src/teleop_mulinex_node.cpp src/main.cpp)
 
-target_include_directories(teleop_mulinex_node
+target_include_directories(
+    teleop_mulinex_node
     PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
-ament_target_dependencies(teleop_mulinex_node
-    rclcpp geometry_msgs omni_utils std_srvs)
+ament_target_dependencies(teleop_mulinex_node rclcpp geometry_msgs omni_utils
+                          std_srvs)
 
 install(TARGETS teleop_mulinex_node DESTINATION lib/${PROJECT_NAME})
 
