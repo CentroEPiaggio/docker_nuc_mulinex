@@ -74,7 +74,8 @@ OmniMulinexJoystick::OmniMulinexJoystick(): Node("omni_mulinex_joystick")
     activate_client_ = this->create_client<std_srvs::srv::SetBool>("/omni_controller/activate_srv");
     emergency_client_ =
         this->create_client<std_srvs::srv::SetBool>("/omni_controller/emergency_srv");
-    homing_client_ = this->create_client<std_srvs::srv::SetBool>("/omni_controller/homing_srv");
+    rest_client_ = this->create_client<std_srvs::srv::SetBool>("/omni_controller/rest_srv");
+    stand_client_ = this->create_client<std_srvs::srv::SetBool>("/omni_controller/stand_srv");
     ik_reinit_client_ =
         this->create_client<std_srvs::srv::SetBool>("/ik_controller/reinitialize_srv");
     ik_activate_client_ =
@@ -185,17 +186,31 @@ void OmniMulinexJoystick::joy_callback(const sensor_msgs::msg::Joy::SharedPtr ms
         }
     }
 
-    // X (btn 0) → homing (also deactivates IK)
+    // X (btn 0) → rest (also deactivates IK)
     if (btn_rising(0)) {
         deactivate_ik();
 
         auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
         req->data = true;
-        if (homing_client_->service_is_ready()) {
-            homing_client_->async_send_request(req);
-            RCLCPP_INFO(this->get_logger(), "Homing service called");
+        if (rest_client_->service_is_ready()) {
+            rest_client_->async_send_request(req);
+            RCLCPP_INFO(this->get_logger(), "Rest service called");
         } else {
-            RCLCPP_WARN(this->get_logger(), "Homing service not available");
+            RCLCPP_WARN(this->get_logger(), "Rest service not available");
+        }
+    }
+
+    // △ (btn 2) → stand (also deactivates IK)
+    if (btn_rising(2)) {
+        deactivate_ik();
+
+        auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
+        req->data = true;
+        if (stand_client_->service_is_ready()) {
+            stand_client_->async_send_request(req);
+            RCLCPP_INFO(this->get_logger(), "Stand service called");
+        } else {
+            RCLCPP_WARN(this->get_logger(), "Stand service not available");
         }
     }
 
@@ -323,7 +338,8 @@ void OmniMulinexJoystick::print_instructions()
                             "║  BUTTONS                                                   ║\n"
                             "║  ───────                                                   ║\n"
                             "║  L1 → ACTIVATE HW     R1 → EMERGENCY STOP                  ║\n"
-                            "║  □  → ACTIVATE IK     ✕  → HOMING                          ║\n"
+                            "║  □  → ACTIVATE IK     ✕  → REST                            ║\n"
+                            "║  △  → STAND                                                 ║\n"
                             "║  L3 → reset wheels    R3 → reset body pose                 ║\n"
                             "║  PS → reset ALL                                            ║\n"
                             "╚════════════════════════════════════════════════════════════╝"

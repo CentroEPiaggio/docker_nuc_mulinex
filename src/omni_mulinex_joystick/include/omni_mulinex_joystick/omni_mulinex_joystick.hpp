@@ -33,7 +33,8 @@ private:
     // Service clients
     rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr activate_client_;
     rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr emergency_client_;
-    rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr homing_client_;
+    rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr rest_client_;
+    rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr stand_client_;
     rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr ik_reinit_client_;
     rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr ik_activate_client_;
 
