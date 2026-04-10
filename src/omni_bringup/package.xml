@@ -9,6 +9,10 @@
 
     <author email="davide.debenedittis@gmail.com">Davide De Benedittis</author>
 
+    <depend>rclpy</depend>
+    <depend>std_msgs</depend>
+
+    <exec_depend>launch_ros</exec_depend>
     <exec_depend>omni_mulinex_joystick</exec_depend>
     <exec_depend>ik_controller</exec_depend>
     <exec_depend>ros2bag</exec_depend>

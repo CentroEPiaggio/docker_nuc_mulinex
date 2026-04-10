@@ -21,4 +21,9 @@ setup(
     description='Bringup launch files for the Mulinex robot',
     license='TODO: License declaration',
     tests_require=['pytest'],
+    entry_points={
+        'console_scripts': [
+            'nuc_heartbeat_node = omni_bringup.nuc_heartbeat_node:main',
+        ],
+    },
 )

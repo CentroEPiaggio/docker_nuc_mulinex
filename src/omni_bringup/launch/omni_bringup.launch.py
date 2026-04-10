@@ -4,9 +4,18 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import ExecuteProcess, IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch_ros.actions import Node
 
 
 def generate_launch_description():
+    nuc_heartbeat = Node(
+        package='omni_bringup',
+        executable='nuc_heartbeat_node',
+        name='nuc_heartbeat',
+        parameters=[{'rate': 10.0}],
+        output='screen',
+    )
+
     joystick_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(
@@ -43,6 +52,7 @@ def generate_launch_description():
 
     return LaunchDescription(
         [
+            nuc_heartbeat,
             joystick_launch,
             ik_controller_launch,
             rosbag_record,
