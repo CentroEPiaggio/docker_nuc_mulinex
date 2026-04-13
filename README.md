@@ -56,12 +56,14 @@ check_chrony_100
 
 ### Launch Files
 
+Optional arguments are between square brackets `[]`. Multiple options are separated by a pipe `|` and the first value is the default.
+
 Start the hardware interface on the Raspberry.
 The updated hardware interface launch file automatically starts the necessary controllers.
 
 Activate the joystick with
 ```shell
-ros2 launch omni_mulinex_joystick joystick.launch.py
+ros2 launch omni_bringup omni_bringup.launch.py [record_bag:={false|true}]
 ```
 
 Launch the lidar with
