@@ -32,3 +32,28 @@ mulinex:
     - RF_KFE
     - RH_HFE
     - RH_KFE
+
+# =============================== Mulinex White ============================== #
+
+mulinex_white:
+  pkg_name: mulinex_description
+  urdf_path: /urdf/mulinex_white.xacro
+  urdf_args:
+    feet_type: normal
+    use_gazebo: "false"
+  base_name: base_link
+  n_joints_per_leg: 2
+  feet_names:
+    - LF_FOOT
+    - LH_FOOT
+    - RF_FOOT
+    - RH_FOOT
+  ordered_joint_names:
+    - LF_HFE
+    - LF_KFE
+    - LH_HFE
+    - LH_KFE
+    - RF_HFE
+    - RF_KFE
+    - RH_HFE
+    - RH_KFE

@@ -1,6 +1,6 @@
 ik_controller:
   ros__parameters:
-    robot_name: "mulinex"
+    robot_name: "mulinex_white"
     rate: 100.0
     ik_iterations: 10
     ik_gain: 2.0
