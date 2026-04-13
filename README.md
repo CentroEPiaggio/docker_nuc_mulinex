@@ -97,16 +97,17 @@ ros2 launch sllidar_ros2 view_sllidar_s2e_launch.py device_ip:=192.168.11.2
 - `/omni_controller/joints_state` [`pi3hat_moteus_int_msgs/JointsStates`]: current joint states from the hardware interface
 
 and publishes:
-- `/omni_controller/legs_cmd` [`pi3hat_moteus_int_msgs/JointsCommand`]: leg joint position/velocity/effort commands computed via inverse kinematics
+- `/omni_controller/joints_reference` [`pi3hat_moteus_int_msgs/JointsCommand`]: reference setpoints (position/velocity/effort) for non-wheel joints computed via inverse kinematics
 
 ---
 
 The hardware interface (`omni_controller`) subscribes to:
 - `/omni_controller/twist_cmd` [`geometry_msgs/Twist`]: wheel velocity commands from the joystick
-- `/omni_controller/legs_cmd` [`pi3hat_moteus_int_msgs/JointsCommand`]: leg joint commands from the IK controller
+- `/omni_controller/joints_reference` [`pi3hat_moteus_int_msgs/JointsCommand`]: reference setpoints for non-wheel joints (legs, arms, etc.) from the IK controller
 
 and publishes:
 - `/omni_controller/joints_state` [`pi3hat_moteus_int_msgs/JointsStates`]: joint feedback (position, velocity, effort, current, temperature)
+- `/omni_controller/debug/joints_command` [`pi3hat_moteus_int_msgs/JointsCommand`]: echo of the commands actually written to hardware each cycle (for debugging / logging)
 - `/omni_controller/odom` [`geometry_msgs/TwistStamped`]: odometry from wheel forward kinematics (optional)
 - `/omni_controller/performance` [`pi3hat_moteus_int_msgs/PacketPass`]: communication performance metrics (optional)
 - `/omni_controller/distributors_state` [`pi3hat_moteus_int_msgs/DistributorsState`]: power distributor state (optional)

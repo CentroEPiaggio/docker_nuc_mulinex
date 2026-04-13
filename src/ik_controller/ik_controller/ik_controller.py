@@ -64,7 +64,7 @@ class IKController(Node):
 
         # Publisher
         self.joint_command_pub = self.create_publisher(
-            JointsCommand, '/omni_controller/legs_cmd', 1
+            JointsCommand, '/omni_controller/joints_reference', 1
         )
 
         # Reinitialize service
