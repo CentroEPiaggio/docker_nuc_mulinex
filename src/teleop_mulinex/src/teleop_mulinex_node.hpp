@@ -31,6 +31,9 @@
 #define KEYCODE_1 0x31
 #define KEYCODE_2 0x32
 #define KEYCODE_3 0x33
+#define KEYCODE_4 0x34
+#define KEYCODE_5 0x35
+#define KEYCODE_6 0x36
 #define KEYCODE_SPACE 0x20
 
 namespace teleop_mulinex {
@@ -50,6 +53,7 @@ private:
         rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr& client, const std::string& name,
         bool value
     );
+    void deactivate_ik();
 
     KeyboardReader keyboard_reader_;
 
@@ -61,7 +65,10 @@ private:
     rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr activate_client_;
     rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr emergency_client_;
     rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr homing_client_;
+    rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr rest_client_;
+    rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr stand_client_;
     rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr ik_reinit_client_;
+    rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr ik_activate_client_;
 
     // Timer
     rclcpp::TimerBase::SharedPtr timer_;
@@ -92,6 +99,9 @@ private:
     double wheel_vx_ = 0.0;
     double wheel_vy_ = 0.0;
     double wheel_omega_ = 0.0;
+
+    // IK active tracking
+    bool ik_active_ = false;
 
     // Messages
     geometry_msgs::msg::Pose pose_msg_;

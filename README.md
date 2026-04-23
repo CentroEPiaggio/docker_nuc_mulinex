@@ -71,6 +71,27 @@ Launch the lidar with
 ros2 launch sllidar_ros2 view_sllidar_s2e_launch.py device_ip:=192.168.11.2
 ```
 
+### Gazebo Simulation
+
+Launch the Gazebo simulation with
+```shell
+ros2 launch omni_gazebo gz_sim.launch.py [robot:={omnicar|omniquad12}] [world:=empty.sdf] [gz_verbosity:={0|1|2|3|4}] [use_rviz:={false|true}]
+```
+
+The launch file starts Ignition Gazebo, spawns the selected robot, brings up the ROS↔Gazebo bridge (`/clock`, `/imu`), and spawns the `joint_state_broadcaster` and `omni_controller` ros2_control controllers.
+
+| Argument | Default | Description |
+|---|---|---|
+| `robot` | `omnicar` | Robot model to simulate (`omnicar` or `omniquad12`) |
+| `world` | `empty.sdf` | World SDF file, looked up in `omni_gazebo/worlds/` |
+| `gz_verbosity` | `3` | Gazebo verbosity level (0 = silent, 4 = verbose) |
+| `use_rviz` | `false` | Also launch RViz2 with the robot's default config |
+
+Example — simulate the Mulinex quadruped with RViz open:
+```shell
+ros2 launch omni_gazebo gz_sim.launch.py robot:=omniquad12 use_rviz:=true
+```
+
 ## Packages
 
 - **`ik_controller`** - Inverse kinematics controller using Pinocchio that computes joint positions from desired base pose commands, keeping foot positions fixed in the world frame.

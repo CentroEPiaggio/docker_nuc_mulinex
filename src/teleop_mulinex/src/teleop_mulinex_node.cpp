@@ -42,8 +42,12 @@ TeleopMulinex::TeleopMulinex(): Node("teleop_mulinex")
     emergency_client_ =
         this->create_client<std_srvs::srv::SetBool>("/omni_controller/emergency_srv");
     homing_client_ = this->create_client<std_srvs::srv::SetBool>("/omni_controller/homing_srv");
+    rest_client_ = this->create_client<std_srvs::srv::SetBool>("/omni_controller/rest_srv");
+    stand_client_ = this->create_client<std_srvs::srv::SetBool>("/omni_controller/stand_srv");
     ik_reinit_client_ =
         this->create_client<std_srvs::srv::SetBool>("/ik_controller/reinitialize_srv");
+    ik_activate_client_ =
+        this->create_client<std_srvs::srv::SetBool>("/ik_controller/activate_srv");
 
     timer_ = this->create_wall_timer(
         std::chrono::milliseconds(40), // 25 Hz
@@ -149,17 +153,34 @@ bool TeleopMulinex::process_key(char c)
 
     // Services
     case KEYCODE_1:
-        // Activate: reset body pose, reinit IK, then activate
-        body_x_ = body_y_ = body_height_ = 0.0;
-        body_roll_ = body_pitch_ = body_yaw_ = 0.0;
-        call_service(ik_reinit_client_, "IK reinitialize", true);
+        // Activate hardware
         call_service(activate_client_, "Activate", true);
         return true;
     case KEYCODE_2:
+        // Emergency stop (also deactivates IK)
+        deactivate_ik();
         call_service(emergency_client_, "Emergency stop", true);
         return true;
     case KEYCODE_3:
         call_service(homing_client_, "Homing", true);
+        return true;
+    case KEYCODE_4:
+        // Rest (also deactivates IK)
+        deactivate_ik();
+        call_service(rest_client_, "Rest", true);
+        return true;
+    case KEYCODE_5:
+        // Stand (also deactivates IK)
+        deactivate_ik();
+        call_service(stand_client_, "Stand", true);
+        return true;
+    case KEYCODE_6:
+        // Activate IK controller (reset body pose, reinit, then activate)
+        body_x_ = body_y_ = body_height_ = 0.0;
+        body_roll_ = body_pitch_ = body_yaw_ = 0.0;
+        call_service(ik_reinit_client_, "IK reinitialize", true);
+        call_service(ik_activate_client_, "IK activate", true);
+        ik_active_ = true;
         return true;
 
     // Reset wheels only
@@ -203,8 +224,20 @@ void TeleopMulinex::update_messages()
 
 void TeleopMulinex::publish_messages()
 {
-    pose_pub_->publish(pose_msg_);
     wheel_pub_->publish(wheel_msg_);
+    if (ik_active_) {
+        pose_pub_->publish(pose_msg_);
+    }
+}
+
+void TeleopMulinex::deactivate_ik()
+{
+    if (ik_active_) {
+        ik_active_ = false;
+        body_x_ = body_y_ = body_height_ = 0.0;
+        body_roll_ = body_pitch_ = body_yaw_ = 0.0;
+        call_service(ik_activate_client_, "IK deactivate", false);
+    }
 }
 
 void TeleopMulinex::call_service(
@@ -240,9 +273,12 @@ void TeleopMulinex::print_instructions()
     puts("  t/g: +/- body y position");
     puts("---------------------------");
     puts("Services:");
-    puts("  1: activate (reset body + reinit IK)");
+    puts("  1: activate HW");
     puts("  2: emergency stop");
     puts("  3: homing");
+    puts("  4: rest");
+    puts("  5: stand");
+    puts("  6: activate IK (reset body + reinit)");
     puts("---------------------------");
     puts("Resets:");
     puts("  v: reset wheels only");
