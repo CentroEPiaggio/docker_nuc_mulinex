@@ -9,7 +9,7 @@ def generate_launch_description():
     config = os.path.join(
         get_package_share_directory('omni_mulinex_joystick'),
         'config',
-        'joystick_params.yaml',
+        'joystick_params_pan_tilt.yaml',
     )
 
     return LaunchDescription(

@@ -7,12 +7,14 @@ namespace omni_mulinex_joystick {
 
 OmniMulinexJoystick::OmniMulinexJoystick(): Node("omni_mulinex_joystick")
 {
-    print_instructions();
+    
 
     // Declare parameters
     this->declare_parameter("sup_vel_x", 1.0);
     this->declare_parameter("sup_vel_y", 1.0);
     this->declare_parameter("sup_omega", 2.0);
+    this->declare_parameter("sup_pan", 0.5);
+    this->declare_parameter("sup_tilt", 0.5);
     this->declare_parameter("height_step", 0.005);
     this->declare_parameter("yaw_step", 0.02);
     this->declare_parameter("roll_step", 0.02);
@@ -27,11 +29,14 @@ OmniMulinexJoystick::OmniMulinexJoystick(): Node("omni_mulinex_joystick")
     this->declare_parameter("deadzone", 0.1);
     this->declare_parameter("timer_period_ms", 100);
     this->declare_parameter("subscribe_state", true);
+    this->declare_parameter("mode", "normal");
 
     // Read parameters
     sup_vel_x_ = this->get_parameter("sup_vel_x").as_double();
     sup_vel_y_ = this->get_parameter("sup_vel_y").as_double();
     sup_omega_ = this->get_parameter("sup_omega").as_double();
+    sup_pan_vel_ = this->get_parameter("sup_pan").as_double();
+    sup_tilt_vel_ = this->get_parameter("sup_tilt").as_double();
     height_step_ = this->get_parameter("height_step").as_double();
     yaw_step_ = this->get_parameter("yaw_step").as_double();
     roll_step_ = this->get_parameter("roll_step").as_double();
@@ -46,6 +51,7 @@ OmniMulinexJoystick::OmniMulinexJoystick(): Node("omni_mulinex_joystick")
     deadzone_ = this->get_parameter("deadzone").as_double();
     timer_period_ms_ = this->get_parameter("timer_period_ms").as_int();
     subscribe_state_ = this->get_parameter("subscribe_state").as_bool();
+    mode_ = this->get_parameter("mode").as_string();
 
     // Twist publisher with BestEffort QoS and deadline
     rclcpp::QoS twist_qos(10);
@@ -58,9 +64,50 @@ OmniMulinexJoystick::OmniMulinexJoystick(): Node("omni_mulinex_joystick")
     pose_pub_ = this->create_publisher<geometry_msgs::msg::Pose>("/ik_controller/base_pose", 1);
 
     // Joy subscriber
-    joy_sub_ = this->create_subscription<sensor_msgs::msg::Joy>(
-        "joy", 10, std::bind(&OmniMulinexJoystick::joy_callback, this, std::placeholders::_1)
-    );
+    if (mode_ == "normal") {
+        print_instructions();
+        joy_sub_ = this->create_subscription<sensor_msgs::msg::Joy>(
+            "joy", 10, std::bind(&OmniMulinexJoystick::joy_callback, this, std::placeholders::_1)
+        );
+
+        // Timer
+        timer_ = this->create_wall_timer(
+            std::chrono::milliseconds(timer_period_ms_),
+            std::bind(&OmniMulinexJoystick::timer_callback, this)
+        );
+
+    } else if (mode_ == "pan-tilt") {
+
+        print_instructions_pan_tilt();
+        joy_sub_ = this->create_subscription<sensor_msgs::msg::Joy>(
+            "joy", 10, std::bind(&OmniMulinexJoystick::joy_callback_pan_tilt, this, std::placeholders::_1)
+        );
+
+        // Timer
+        timer_ = this->create_wall_timer(
+            std::chrono::milliseconds(timer_period_ms_),
+            std::bind(&OmniMulinexJoystick::timer_callback_pan_tilt, this)
+        );
+
+        joints_command_pub_ = this->create_publisher<pi3hat_moteus_int_msgs::msg::JointsCommand>("/omni_controller/joints_reference", 1);
+
+
+    } else {
+
+        print_instructions();
+        RCLCPP_WARN_STREAM(this->get_logger(), "Unknown mode '" << mode_ << "'. Defaulting to 'normal'.");
+        joy_sub_ = this->create_subscription<sensor_msgs::msg::Joy>(
+            "joy", 10, std::bind(&OmniMulinexJoystick::joy_callback_pan_tilt, this, std::placeholders::_1)
+        );
+
+        // Timer
+        timer_ = this->create_wall_timer(
+            std::chrono::milliseconds(timer_period_ms_),
+            std::bind(&OmniMulinexJoystick::timer_callback, this)
+        );
+    }
+
+    
 
     // State subscriber (optional)
     if (subscribe_state_) {
@@ -81,11 +128,7 @@ OmniMulinexJoystick::OmniMulinexJoystick(): Node("omni_mulinex_joystick")
     ik_activate_client_ =
         this->create_client<std_srvs::srv::SetBool>("/ik_controller/activate_srv");
 
-    // Timer
-    timer_ = this->create_wall_timer(
-        std::chrono::milliseconds(timer_period_ms_),
-        std::bind(&OmniMulinexJoystick::timer_callback, this)
-    );
+    
 }
 
 void OmniMulinexJoystick::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg)
@@ -346,5 +389,183 @@ void OmniMulinexJoystick::print_instructions()
                             "\033[0m"
     );
 }
+
+
+
+
+void OmniMulinexJoystick::joy_callback_pan_tilt(const sensor_msgs::msg::Joy::SharedPtr msg)
+{
+    const auto& axes = msg->axes;
+    const auto& buttons = msg->buttons;
+
+    // Initialize previous button state on first message
+    if (prev_buttons_.empty()) {
+        prev_buttons_.resize(buttons.size(), false);
+    }
+
+    // Helper: apply deadzone
+    auto dz = [this](double val) -> double { return (std::abs(val) < deadzone_) ? 0.0 : val; };
+
+    // Helper: rising edge detection for buttons
+    auto btn_rising = [&](size_t idx) -> bool {
+        if (idx >= buttons.size())
+            return false;
+        return buttons[idx] && (idx >= prev_buttons_.size() || !prev_buttons_[idx]);
+    };
+
+    // ── Store analog stick values ───────────────────────────────────────
+    if (axes.size() > 0)
+        joy_left_x_ = dz(axes[0]);
+    if (axes.size() > 1)
+        joy_left_y_ = dz(axes[1]);
+    if (axes.size() > 2)
+        joy_right_x_ = dz(axes[2]);
+    if (axes.size() > 3)
+        joy_right_y_ = dz(axes[3]);
+    // if (axes.size() > 5)
+    //     joy_left_trigger_ = dz(axes[5]);
+    // if (axes.size() > 6)
+    //     joy_right_trigger_ = dz(axes[6]);
+
+
+    if (axes.size() > 4) {
+        if (!rt_initialized_ && axes[4] != 0.0)
+            rt_initialized_ = true;
+        joy_right_trigger_ = rt_initialized_ ? axes[4] : 1.0;
+    }
+
+    if (axes.size() > 5) {
+        if (!lt_initialized_ && axes[5] != 0.0)
+            lt_initialized_ = true;
+        joy_left_trigger_ = lt_initialized_ ? axes[5] : 1.0;
+    }
+
+
+    // ── Services ────────────────────────────────────────────────────────
+    // L1 (btn 4) → activate hardware
+    if (btn_rising(4)) {
+        auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
+        req->data = true;
+        if (activate_client_->service_is_ready()) {
+            activate_client_->async_send_request(req);
+            RCLCPP_INFO(this->get_logger(), "Activate service called");
+        } else {
+            RCLCPP_WARN(this->get_logger(), "Activate service not available");
+        }
+    }
+
+    // □ (btn 3) → SHOOT
+    if (btn_rising(2)) {
+        // Reset body pose to zero for clean start
+        RCLCPP_WARN_STREAM(this->get_logger(), "SHOOT! (not implemented)");
+    }
+
+    // R1 (btn 5) → emergency stop (also deactivates IK)
+    if (btn_rising(5)) {
+        deactivate_ik();
+
+        auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
+        req->data = true;
+        if (emergency_client_->service_is_ready()) {
+            emergency_client_->async_send_request(req);
+            RCLCPP_INFO(this->get_logger(), "Emergency stop service called");
+        } else {
+            RCLCPP_WARN(this->get_logger(), "Emergency stop service not available");
+        }
+    }
+
+    // X (btn 0) → rest (also deactivates IK)
+    if (btn_rising(0)) {
+        deactivate_ik();
+
+        auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
+        req->data = true;
+        if (rest_client_->service_is_ready()) {
+            rest_client_->async_send_request(req);
+            RCLCPP_INFO(this->get_logger(), "Rest service called");
+        } else {
+            RCLCPP_WARN(this->get_logger(), "Rest service not available");
+        }
+    }
+
+
+    // Update previous button state
+    prev_buttons_.resize(buttons.size());
+    for (size_t i = 0; i < buttons.size(); i++) {
+        prev_buttons_[i] = buttons[i];
+    }
+}
+
+
+
+
+
+
+void OmniMulinexJoystick::print_instructions_pan_tilt()
+{
+    RCLCPP_INFO(
+        this->get_logger(), "\n\033[32m"
+                            "╔════════════════════════════════════════════════════════════╗\n"
+                            "║              Omni Mulinex Joystick (PS4)                   ║\n"
+                            "╠════════════════════════════════════════════════════════════╣\n"
+                            "║  PAN-TILT MODE                                             ║\n"
+                            "║  ───────────                                               ║\n"
+                            "║  Left Stick X/Y   → wheel vy / vx                          ║\n"
+                            "║  Right Stick X    → Arm pan                                ║\n"
+                            "║  Right Stick Y    → Arm tilt                               ║\n"
+                            "║  L2               → Negative Omega                         ║\n"
+                            "║  R2               → Positive Omega                         ║\n"
+                            "║                                                            ║\n"
+                            "║  BUTTONS                                                   ║\n"
+                            "║  ───────                                                   ║\n"
+                            "║  L1 → ACTIVATE HW     R1 → EMERGENCY STOP                  ║\n"
+                            "║  □  → SHOOT           ✕  → REST                            ║\n"
+                            "║                                                            ║\n"
+                            "╚════════════════════════════════════════════════════════════╝"
+                            "\033[0m"
+    );
+}
+
+
+
+void OmniMulinexJoystick::timer_callback_pan_tilt()
+{
+    // ── Twist (wheels) ──────────────────────────────────────────────────
+    geometry_msgs::msg::Twist twist_msg;
+    // Normal: sticks → wheels
+    twist_msg.linear.x = joy_left_y_ * sup_vel_x_;
+    twist_msg.linear.y = joy_left_x_ * sup_vel_y_;
+    // Triggers: normalize [1, -1] → [0, 1] pressed amount
+    // RT = positive omega, LT = negative omega
+    double rt_pressed = (1.0 - joy_right_trigger_) / 2.0;
+    double lt_pressed = (1.0 - joy_left_trigger_)  / 2.0;
+    if (rt_pressed) {
+        twist_msg.angular.z = rt_pressed * sup_omega_;
+    }
+    if (lt_pressed) {
+        twist_msg.angular.z = -lt_pressed * sup_omega_;
+    }
+    twist_pub_->publish(twist_msg);
+
+
+
+    // ── Pan/Tilt arm ─────────────────────────────────────────────────────
+    pi3hat_moteus_int_msgs::msg::JointsCommand arm_cmd;
+    arm_cmd.name     = {"arm_pan", "arm_tilt"};
+    arm_cmd.velocity = {joy_right_x_ * sup_pan_vel_,
+                        joy_right_y_ * sup_tilt_vel_};
+    // position and effort left empty / zeroed — velocity-only command
+    arm_cmd.position = {std::numeric_limits<double>::quiet_NaN(),
+                        std::numeric_limits<double>::quiet_NaN()};
+    arm_cmd.effort   = {0.0, 0.0};
+    arm_cmd.kp_scale = {1.0, 1.0};
+    arm_cmd.kd_scale = {1.0, 1.0};
+    joints_command_pub_->publish(arm_cmd);
+
+
+}
+
+
+
 
 } // namespace omni_mulinex_joystick
