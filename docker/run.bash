@@ -34,6 +34,11 @@ docker run \
     --env="ROS_DOMAIN_ID=10" \
     --env="RMW_IMPLEMENTATION=rmw_cyclonedds_cpp" \
     --env="RCUTILS_COLORIZED_OUTPUT=1" \
+    `# SSH access settings.` \
+    --env="ENABLE_SSH=${ENABLE_SSH:-1}" \
+    --env="SSH_PORT=${SSH_PORT:-2222}" \
+    --env="SSH_USER=${SSH_USER:-mulinex}" \
+    --env="SSH_PASSWORD=${SSH_PASSWORD:-mulinex}" \
     `# Mount the folders in this directory.` \
     -v ${PWD}:/home/$USER/mulinex_ws \
     -v ~/docker/${IMAGE_NAME}/Plotjuggler:/home/$USER/.config/PlotJuggler \

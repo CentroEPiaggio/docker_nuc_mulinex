@@ -32,6 +32,11 @@ services:
       - ROS_DOMAIN_ID=10
       - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
       - RCUTILS_COLORIZED_OUTPUT=1
+      # SSH
+      - ENABLE_SSH=${ENABLE_SSH:-1}
+      - SSH_PORT=${SSH_PORT:-2222}
+      - SSH_USER=${SSH_USER:-mulinex}
+      - SSH_PASSWORD=${SSH_PASSWORD}
       # Shell history
       - HISTFILE=/home/.bash_history
       - HISTFILESIZE=${HISTFILESIZE}
