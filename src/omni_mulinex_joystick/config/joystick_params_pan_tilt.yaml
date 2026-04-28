@@ -5,7 +5,7 @@ omni_mulinex_joystick:
     sup_vel_x: 0.5
     sup_vel_y: 0.5
     sup_omega: 0.5
-    sup_pan: 0.5
+    sup_pan: 1.0
     sup_tilt: 0.5
     height_step: 0.005
     roll_step: 0.02

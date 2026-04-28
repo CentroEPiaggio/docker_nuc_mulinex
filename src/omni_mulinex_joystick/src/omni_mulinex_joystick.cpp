@@ -418,26 +418,26 @@ void OmniMulinexJoystick::joy_callback_pan_tilt(const sensor_msgs::msg::Joy::Sha
         joy_left_x_ = dz(axes[0]);
     if (axes.size() > 1)
         joy_left_y_ = dz(axes[1]);
-    if (axes.size() > 2)
-        joy_right_x_ = dz(axes[2]);
     if (axes.size() > 3)
-        joy_right_y_ = dz(axes[3]);
+        joy_right_x_ = dz(axes[3]);
+    if (axes.size() > 4)
+        joy_right_y_ = dz(axes[4]);
     // if (axes.size() > 5)
     //     joy_left_trigger_ = dz(axes[5]);
     // if (axes.size() > 6)
     //     joy_right_trigger_ = dz(axes[6]);
 
 
-    if (axes.size() > 4) {
-        if (!rt_initialized_ && axes[4] != 0.0)
+    if (axes.size() > 5) {
+        if (!rt_initialized_ && axes[5] != 0.0)
             rt_initialized_ = true;
-        joy_right_trigger_ = rt_initialized_ ? axes[4] : 1.0;
+        joy_right_trigger_ = rt_initialized_ ? axes[5] : 1.0;
     }
 
-    if (axes.size() > 5) {
-        if (!lt_initialized_ && axes[5] != 0.0)
+    if (axes.size() > 2) {
+        if (!lt_initialized_ && axes[2] != 0.0)
             lt_initialized_ = true;
-        joy_left_trigger_ = lt_initialized_ ? axes[5] : 1.0;
+        joy_left_trigger_ = lt_initialized_ ? axes[2] : 1.0;
     }
 
 
@@ -533,8 +533,8 @@ void OmniMulinexJoystick::timer_callback_pan_tilt()
     // ── Twist (wheels) ──────────────────────────────────────────────────
     geometry_msgs::msg::Twist twist_msg;
     // Normal: sticks → wheels
-    twist_msg.linear.x = joy_left_y_ * sup_vel_x_;
-    twist_msg.linear.y = joy_left_x_ * sup_vel_y_;
+    twist_msg.linear.x = -joy_left_y_ * sup_vel_x_;
+    twist_msg.linear.y = -joy_left_x_ * sup_vel_y_;
     // Triggers: normalize [1, -1] → [0, 1] pressed amount
     // RT = positive omega, LT = negative omega
     double rt_pressed = (1.0 - joy_right_trigger_) / 2.0;
@@ -551,9 +551,11 @@ void OmniMulinexJoystick::timer_callback_pan_tilt()
 
     // ── Pan/Tilt arm ─────────────────────────────────────────────────────
     pi3hat_moteus_int_msgs::msg::JointsCommand arm_cmd;
+    arm_cmd.header.stamp = this->now();
+    arm_cmd.header.frame_id = "";
     arm_cmd.name     = {"arm_pan", "arm_tilt"};
     arm_cmd.velocity = {joy_right_x_ * sup_pan_vel_,
-                        joy_right_y_ * sup_tilt_vel_};
+                        -joy_right_y_ * sup_tilt_vel_};
     // position and effort left empty / zeroed — velocity-only command
     arm_cmd.position = {std::numeric_limits<double>::quiet_NaN(),
                         std::numeric_limits<double>::quiet_NaN()};
