@@ -18,6 +18,7 @@ RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
     libyaml-cpp-dev \
     nano \
     nautilus \
+    openssh-server \
     pipx \
     python3-pip \
     ros-$ROS_DISTRO-ign-ros2-control \
@@ -63,6 +64,15 @@ RUN OLD_USER=$(awk -v uid="$MYUID" -F ':' '$3==uid {print $1}' /etc/passwd) \
         && mkdir -p /home/${USER} && chown ${USER} /home/${USER} ; \
     fi
 
+# Enable simple SSH access on a dedicated port.
+RUN mkdir -p /etc/ssh/sshd_config.d \
+ && printf '%s\n' \
+    'Port 2222' \
+    'PasswordAuthentication yes' \
+    'PermitRootLogin no' \
+    'UsePAM yes' \
+    > /etc/ssh/sshd_config.d/99-mulinex.conf
+
 # Choose to run as user
 ENV USER=${USER}
 USER ${USER}
@@ -88,7 +98,6 @@ RUN echo "" >> ~/.bashrc \
 # Change entrypoint to source ~/.bashrc and start in ~
 COPY ./docker/.config/entrypoint.sh /ros_entrypoint.sh
 RUN sudo chmod +x /ros_entrypoint.sh ; sudo chown ${USER} /ros_entrypoint.sh \
- && echo 'exec bash -i -c "$@"' >> /ros_entrypoint.sh \
  && cat /ros_entrypoint.sh
 
 ENTRYPOINT ["/ros_entrypoint.sh"]
