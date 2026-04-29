@@ -118,8 +118,10 @@ void OmniMulinexJoystick::joy_callback(const sensor_msgs::msg::Joy::SharedPtr ms
     if (axes.size() > 4)
         joy_right_y_ = dz(axes[4]);
 
-    // L2 modifier (button 6)
+    // L2 modifier (button 6) to activate hardware
     l2_held_ = (buttons.size() > 6) && buttons[6];
+    // R2 hold (button 7) used as deadman for publishing twist
+    r2_held_ = (buttons.size() > 7) && buttons[7];
 
     // ── D-pad: base x/y position (edge-triggered, only when IK active) ─
     // D-pad up/down (axes[7]) → x position
@@ -245,6 +247,10 @@ void OmniMulinexJoystick::joy_callback(const sensor_msgs::msg::Joy::SharedPtr ms
 
 void OmniMulinexJoystick::timer_callback()
 {
+    // Only publish while deadman (R2) is held. TODO: this culd be configured at launch
+    if (!r2_held_)
+        return;
+
     // ── Twist (wheels) ──────────────────────────────────────────────────
     geometry_msgs::msg::Twist twist_msg;
     if (!l2_held_) {
@@ -338,6 +344,7 @@ void OmniMulinexJoystick::print_instructions()
                             "║  BUTTONS                                                   ║\n"
                             "║  ───────                                                   ║\n"
                             "║  L1 → ACTIVATE HW     R1 → EMERGENCY STOP                  ║\n"
+                            "║  HOLD R2 → TAKE CONTROL                                    ║\n"
                             "║  □  → ACTIVATE IK     ✕  → REST                            ║\n"
                             "║  △  → STAND                                                 ║\n"
                             "║  L3 → reset wheels    R3 → reset body pose                 ║\n"

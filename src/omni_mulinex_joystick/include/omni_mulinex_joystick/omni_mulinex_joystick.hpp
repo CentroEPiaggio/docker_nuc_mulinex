@@ -65,6 +65,7 @@ private:
     double joy_left_y_ = 0.0;
     double joy_right_x_ = 0.0;
     double joy_right_y_ = 0.0;
+    bool r2_held_ = false;
     bool l2_held_ = false;
     bool ik_active_ = false;
 
