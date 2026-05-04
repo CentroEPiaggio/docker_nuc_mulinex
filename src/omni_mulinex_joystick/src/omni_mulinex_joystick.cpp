@@ -255,9 +255,9 @@ void OmniMulinexJoystick::timer_callback()
     geometry_msgs::msg::Twist twist_msg;
     if (!l2_held_) {
         // Normal: sticks → wheels
-        twist_msg.linear.x = joy_left_y_ * sup_vel_x_;
-        twist_msg.linear.y = joy_left_x_ * sup_vel_y_;
-        twist_msg.angular.z = joy_right_x_ * sup_omega_;
+        twist_msg.linear.x = -joy_left_y_ * sup_vel_x_;
+        twist_msg.linear.y = -joy_left_x_ * sup_vel_y_;
+        twist_msg.angular.z = -joy_right_x_ * sup_omega_;
 
         // Right stick Y → height rate (only when IK active)
         if (ik_active_) {
