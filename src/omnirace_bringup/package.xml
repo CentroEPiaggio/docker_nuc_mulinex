@@ -8,10 +8,12 @@
     <license>TODO: License declaration</license>
 
     <author email="tolomei.simone5@gmail.com">Simone Tolomei</author>
+    <depend>tf2_ros</depend>
 
     <exec_depend>ament_index_python</exec_depend>
     <exec_depend>launch</exec_depend>
     <exec_depend>launch_ros</exec_depend>
+    <exec_depend>rclpy</exec_depend>
     <exec_depend>omni_mulinex_joystick</exec_depend>
     <exec_depend>twist_mux</exec_depend>
 

@@ -22,4 +22,9 @@ setup(
     description='Bringup launch files for the Mulinex omnirace stack',
     license='TODO: License declaration',
     tests_require=['pytest'],
+    entry_points={
+        'console_scripts': [
+            'demo_run_node = omnirace_bringup.demo_run_node:main',
+        ],
+    },
 )
