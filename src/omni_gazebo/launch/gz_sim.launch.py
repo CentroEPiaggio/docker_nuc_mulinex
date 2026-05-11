@@ -132,12 +132,21 @@ def generate_launch_description():
     )
 
     # ── ROS <-> Gazebo bridge ────────────────────────────────────────────────
+    # OdometryPublisher (configured in omnicar_ignition.xacro) emits the
+    # world → base_link transform as ignition.msgs.Pose_V on
+    # /model/mulinex/tf — bridge that into /tf.
     bridge = Node(
         package='ros_gz_bridge',
         executable='parameter_bridge',
         arguments=[
             '/clock@rosgraph_msgs/msg/Clock[ignition.msgs.Clock',
             '/imu@sensor_msgs/msg/Imu[ignition.msgs.IMU',
+            '/model/mulinex/pose@tf2_msgs/msg/TFMessage[ignition.msgs.Pose_V',
+            '/model/mulinex/odometry@nav_msgs/msg/Odometry[ignition.msgs.Odometry',
+        ],
+        remappings=[
+            ('/model/mulinex/pose', '/tf'),
+            ('/model/mulinex/odometry', '/odom'),
         ],
         output='screen',
     )
