@@ -1,3 +1,44 @@
+# OMNIRACE SIMULATION BRINGUP
+
+Start the simulation with 
+
+```shell
+ros2 launch omnirace_bringup omnirace_sim.launch.py
+
+```
+
+Activate the controller:
+
+```shell
+ros2 service call /omni_controller/activate_srv std_srvs/srv/SetBool data:\ true\
+```
+
+Students can now build code on the docker *on another user*. In order to run it, you need to enter the docker in ssh, source the workspace, and run the node.
+
+```shell
+    ssh -p 2222 mulinex@localhost
+    cd ros2_ws
+    source install/setup.bash
+    ros2 run <filename> <filename>
+```
+
+Password is `mulinex`. filneame should be the simulink filenmae that the students are using.
+
+
+
+---
+
+
+
+
+
+
+
+
+
+
+
+
 # Docker NUC Mulinex
 
 This repository contains the Docker configuration for the NUC of the Mulinex project.
