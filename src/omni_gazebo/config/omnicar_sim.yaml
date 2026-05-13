@@ -16,6 +16,13 @@ omni_controller:
       LH: LH_WHEEL_JNT
       RF: RF_WHEEL_JNT
       RH: RH_WHEEL_JNT
+    
+    velocity_lpf:
+      enabled: true             # Enable or disable the filter (default: false)
+      cutoff_freq: 2.0          # [Hz] --> 0.175 sec rise time
+    twist_max_x: 0.5
+    twist_max_y: 0.5
+    twist_max_z: 1.0
 
     # Wheel IK
     wheel_mode: ik
