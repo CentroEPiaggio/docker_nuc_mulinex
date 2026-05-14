@@ -14,6 +14,7 @@ namespace omni_mulinex_joystick {
 // Demo state
 enum class DemoPhase { 
     IDLE, 
+    RESET,
     MOVE_RIGHT,             MOVE_LEFT, 
     MOVE_FORWARD,           MOVE_BACKWARD, 
     YAW_RIGHT,              YAW_LEFT,
@@ -23,7 +24,9 @@ enum class DemoPhase {
     YAW_RIGHT_HIGH,         YAW_LEFT_HIGH,
     ACTIVATE_IK,
     PITCH_FORWARD,          PITCH_BACKWARD,
+    PITCH_INVERSE,          PITCH_HOME,
     ROLL_RIGHT,             ROLL_LEFT,
+    ROLL_INVERSE,           ROLL_HOME,
     BASE_FORWARD,           BASE_BACKWARD,
     BASE_RISE,              BASE_LOWER,
     SINK, 
@@ -42,7 +45,7 @@ private:
     void deactivate_ik();
     void print_instructions();
     void set_demo_phase(DemoPhase phase);
-    void transition_demo(DemoPhase next, double delay_s = 0.5);
+    void transition_demo(DemoPhase next, double delay_s = 0.7);
 
     // Publishers
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr twist_pub_;

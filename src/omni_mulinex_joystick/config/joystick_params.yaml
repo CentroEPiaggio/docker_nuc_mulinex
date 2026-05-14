@@ -21,8 +21,8 @@ omni_mulinex_joystick:
     demo:
       area_width:     0.5
       area_depth:     0.5
-      travel_time:    1.0
-      pose_time:      1.0
+      travel_time:    1.3
+      pose_time:      2.0
       yaw_angle:      1.5708
       pitch_angle:    0.2
       roll_angle:     0.2

@@ -130,14 +130,14 @@ void OmniMulinexJoystick::joy_callback(const sensor_msgs::msg::Joy::SharedPtr ms
 
 
     // SELECT → toggle demo mode
-    if (btn_rising(4)) {
+    if (btn_rising(8)) {
         if (!demo_active_) {
             demo_active_ = true;
-            transition_demo(DemoPhase::MOVE_RIGHT);
+            transition_demo(DemoPhase::RESET);
             RCLCPP_INFO(this->get_logger(), "Demo started");
         } else {
             demo_active_ = false;
-            transition_demo(DemoPhase::IDLE);
+            transition_demo(DemoPhase::IDLE, 0.0);
             RCLCPP_INFO(this->get_logger(), "Demo interrupted");
         }
     }
@@ -292,11 +292,28 @@ void OmniMulinexJoystick::timer_callback()
         const double vel_x  = demo_area_depth_ / demo_travel_time_;   // front-back
         const double vel_yaw    = demo_yaw_angle_    / demo_pose_time_;
         const double vel_pitch  = demo_pitch_angle_  / demo_pose_time_;
+        const double vel_pitch_inverse  = -demo_pitch_angle_  / demo_pose_time_;
         const double vel_roll   = demo_roll_angle_   / demo_pose_time_;
+        const double vel_roll_inverse   = -demo_roll_angle_   / demo_pose_time_;
         const double vel_base_x_   = demo_base_x_   / demo_pose_time_;
         const double vel_base_z_   = demo_base_z_   / demo_pose_time_;
 
         switch (demo_phase_) {
+            case DemoPhase::RESET: {
+                 // Request body lowering
+                body_x_ = body_y_ = body_height_ = 0.0;
+                body_roll_ = body_pitch_ = body_yaw_ = 0.0;
+                deactivate_ik();
+                auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
+                req->data = true;
+                if (rest_client_->service_is_ready()) {
+                    rest_client_->async_send_request(req);
+                    RCLCPP_INFO(this->get_logger(), "Rest service called");
+                } else {
+                    RCLCPP_WARN(this->get_logger(), "Rest service not available");
+                }                         
+                break;
+            }
             case DemoPhase::MOVE_RIGHT:         twist_msg.linear.y = -vel_y;        break;
             case DemoPhase::MOVE_LEFT:          twist_msg.linear.y = +vel_y;        break;
             case DemoPhase::MOVE_FORWARD:       twist_msg.linear.x = +vel_x;        break;
@@ -306,14 +323,14 @@ void OmniMulinexJoystick::timer_callback()
             // ── Rise: ramp body_height_ up to max_height_ ─────────────────
             case DemoPhase::RISE: {
                 // Request body raising
-                // auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
-                // req->data = true;
-                // if (stand_client_->service_is_ready()) {
-                //     stand_client_->async_send_request(req);
-                //     RCLCPP_INFO(this->get_logger(), "Stand service called");
-                // } else {
-                //     RCLCPP_WARN(this->get_logger(), "Stand service not available");
-                // }                         
+                auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
+                req->data = true;
+                if (stand_client_->service_is_ready()) {
+                    stand_client_->async_send_request(req);
+                    RCLCPP_INFO(this->get_logger(), "Stand service called");
+                } else {
+                    RCLCPP_WARN(this->get_logger(), "Stand service not available");
+                }                         
                 break;
             }
             // ── Elevated level ────────────────────────────────────────────
@@ -328,15 +345,15 @@ void OmniMulinexJoystick::timer_callback()
                 body_x_ = body_y_ = body_height_ = 0.0;
                 body_roll_ = body_pitch_ = body_yaw_ = 0.0;
 
-                // if (ik_activate_client_->service_is_ready()) {
-                //     auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
-                //     req->data = true;
-                //     ik_activate_client_->async_send_request(req);
+                if (ik_activate_client_->service_is_ready()) {
+                    auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
+                    req->data = true;
+                    ik_activate_client_->async_send_request(req);
                     ik_active_ = true;
-                //     RCLCPP_INFO(this->get_logger(), "IK controller activated");
-                // } else {
-                //     RCLCPP_WARN(this->get_logger(), "IK activate service not available");
-                // }
+                    RCLCPP_INFO(this->get_logger(), "IK controller activated");
+                } else {
+                    RCLCPP_WARN(this->get_logger(), "IK activate service not available");
+                }
                 break;
             }
             // ── Pitch ─────────────────────────────────────────────────────
@@ -346,13 +363,24 @@ void OmniMulinexJoystick::timer_callback()
             case DemoPhase::PITCH_BACKWARD:
                 body_pitch_ = std::clamp(body_pitch_ - vel_pitch * dt, -max_pitch_, max_pitch_);
                 break;
-
+            case DemoPhase::PITCH_INVERSE:
+                body_pitch_ = std::clamp(body_pitch_ + vel_pitch_inverse * dt, -max_pitch_, max_pitch_);
+                break;
+            case DemoPhase::PITCH_HOME:
+                body_pitch_ = std::clamp(body_pitch_ - vel_pitch_inverse * dt, -max_pitch_, max_pitch_);
+                break;
             // ── Roll ──────────────────────────────────────────────────────
             case DemoPhase::ROLL_RIGHT:
                 body_roll_ = std::clamp(body_roll_ + vel_roll * dt, -max_roll_, max_roll_);
                 break;
             case DemoPhase::ROLL_LEFT:
                 body_roll_ = std::clamp(body_roll_ - vel_roll * dt, -max_roll_, max_roll_);
+                break;
+            case DemoPhase::ROLL_INVERSE:
+                body_roll_ = std::clamp(body_roll_ + vel_roll_inverse * dt, -max_roll_, max_roll_);
+                break;
+            case DemoPhase::ROLL_HOME:
+                body_roll_ = std::clamp(body_roll_ - vel_roll_inverse * dt, -max_roll_, max_roll_);
                 break;
 
             case DemoPhase::BASE_FORWARD:
@@ -369,18 +397,21 @@ void OmniMulinexJoystick::timer_callback()
                 body_height_ = std::clamp(body_height_ - vel_base_z_ * dt, -max_height_, max_height_);
                 break;
 
-            case DemoPhase::SINK:
+            case DemoPhase::SINK: {
                  // Request body lowering
-                // auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
-                // req->data = true;
-                // if (rest_client_->service_is_ready()) {
-                //     rest_client_->async_send_request(req);
-                //     RCLCPP_INFO(this->get_logger(), "Rest service called");
-                // } else {
-                //     RCLCPP_WARN(this->get_logger(), "Rest service not available");
-                // }                         
+                body_x_ = body_y_ = body_height_ = 0.0;
+                body_roll_ = body_pitch_ = body_yaw_ = 0.0;
+                deactivate_ik();
+                auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
+                req->data = true;
+                if (rest_client_->service_is_ready()) {
+                    rest_client_->async_send_request(req);
+                    RCLCPP_INFO(this->get_logger(), "Rest service called");
+                } else {
+                    RCLCPP_WARN(this->get_logger(), "Rest service not available");
+                }                         
                 break;
-
+            }
             case DemoPhase::IDLE:
                 break;
             case DemoPhase::DELAY:
@@ -410,6 +441,7 @@ void OmniMulinexJoystick::timer_callback()
 
     if (demo_phase_elapsed_ >= demo_current_phase_duration_) {
         switch (demo_phase_) {
+            case DemoPhase::RESET:              transition_demo(DemoPhase::MOVE_RIGHT, 5.0);        break;
             case DemoPhase::MOVE_RIGHT:         transition_demo(DemoPhase::MOVE_LEFT);             RCLCPP_INFO(this->get_logger(), "[DEMO] MOVE_RIGHT done");         break;
             case DemoPhase::MOVE_LEFT:          transition_demo(DemoPhase::MOVE_FORWARD);          RCLCPP_INFO(this->get_logger(), "[DEMO] MOVE_LEFT done");          break;
             case DemoPhase::MOVE_FORWARD:       transition_demo(DemoPhase::MOVE_BACKWARD);         RCLCPP_INFO(this->get_logger(), "[DEMO] MOVE_FORWARD done");       break;
@@ -418,7 +450,7 @@ void OmniMulinexJoystick::timer_callback()
             case DemoPhase::YAW_LEFT:
                 body_yaw_ = 0.0;
                 transition_demo(DemoPhase::RISE);                                                   RCLCPP_INFO(this->get_logger(), "[DEMO] YAW_LEFT done");           break;
-            case DemoPhase::RISE:               transition_demo(DemoPhase::MOVE_RIGHT_HIGH, 1.0);       RCLCPP_INFO(this->get_logger(), "[DEMO] RISE done");               break;
+            case DemoPhase::RISE:               transition_demo(DemoPhase::MOVE_RIGHT_HIGH, 5.0);       RCLCPP_INFO(this->get_logger(), "[DEMO] RISE done");               break;
             case DemoPhase::MOVE_RIGHT_HIGH:    transition_demo(DemoPhase::MOVE_LEFT_HIGH);        RCLCPP_INFO(this->get_logger(), "[DEMO] MOVE_RIGHT_HIGH done");    break;
             case DemoPhase::MOVE_LEFT_HIGH:     transition_demo(DemoPhase::MOVE_FORWARD_HIGH);     RCLCPP_INFO(this->get_logger(), "[DEMO] MOVE_LEFT_HIGH done");     break;
             case DemoPhase::MOVE_FORWARD_HIGH:  transition_demo(DemoPhase::MOVE_BACKWARD_HIGH);    RCLCPP_INFO(this->get_logger(), "[DEMO] MOVE_FORWARD_HIGH done");  break;
@@ -427,13 +459,17 @@ void OmniMulinexJoystick::timer_callback()
             case DemoPhase::YAW_LEFT_HIGH:
                 body_yaw_ = 0.0;
                 transition_demo(DemoPhase::ACTIVATE_IK);                                            RCLCPP_INFO(this->get_logger(), "[DEMO] YAW_LEFT_HIGH done");      break;
-            case DemoPhase::ACTIVATE_IK:        transition_demo(DemoPhase::PITCH_FORWARD, 1.0);         RCLCPP_INFO(this->get_logger(), "[DEMO] ACTIVATE_IK done");        break;
+            case DemoPhase::ACTIVATE_IK:        transition_demo(DemoPhase::PITCH_FORWARD, 3.0);         RCLCPP_INFO(this->get_logger(), "[DEMO] ACTIVATE_IK done");        break;
             case DemoPhase::PITCH_FORWARD:      transition_demo(DemoPhase::PITCH_BACKWARD);        RCLCPP_INFO(this->get_logger(), "[DEMO] PITCH_FORWARD done");      break;
-            case DemoPhase::PITCH_BACKWARD:
+            case DemoPhase::PITCH_BACKWARD:     transition_demo(DemoPhase::PITCH_INVERSE);         RCLCPP_INFO(this->get_logger(), "[DEMO] PITCH_BACKWARD done");     break;
+            case DemoPhase::PITCH_INVERSE:      transition_demo(DemoPhase::PITCH_HOME);            RCLCPP_INFO(this->get_logger(), "[DEMO] PITCH_INVERSE done");     break;
+            case DemoPhase::PITCH_HOME:
                 body_pitch_ = 0.0;
                 transition_demo(DemoPhase::ROLL_RIGHT);                                             RCLCPP_INFO(this->get_logger(), "[DEMO] PITCH_BACKWARD done");     break;
             case DemoPhase::ROLL_RIGHT:         transition_demo(DemoPhase::ROLL_LEFT);             RCLCPP_INFO(this->get_logger(), "[DEMO] ROLL_RIGHT done");         break;
-            case DemoPhase::ROLL_LEFT:
+            case DemoPhase::ROLL_LEFT:          transition_demo(DemoPhase::ROLL_INVERSE);          RCLCPP_INFO(this->get_logger(), "[DEMO] ROLL_LEFT done");          break;
+            case DemoPhase::ROLL_INVERSE:       transition_demo(DemoPhase::ROLL_HOME);          RCLCPP_INFO(this->get_logger(), "[DEMO] ROLL_INVERSE done");         break;
+            case DemoPhase::ROLL_HOME:
                 body_roll_ = 0.0;
                 transition_demo(DemoPhase::BASE_FORWARD);                                           RCLCPP_INFO(this->get_logger(), "[DEMO] ROLL_LEFT done");          break;
             case DemoPhase::BASE_FORWARD:       transition_demo(DemoPhase::BASE_BACKWARD);         RCLCPP_INFO(this->get_logger(), "[DEMO] BASE_FORWARD done");       break;
@@ -445,7 +481,6 @@ void OmniMulinexJoystick::timer_callback()
                 body_height_ = 0.0;
                 transition_demo(DemoPhase::SINK, 1.0);                                                   RCLCPP_INFO(this->get_logger(), "[DEMO] BASE_LOWER done");         break;
             case DemoPhase::SINK:
-                body_height_ = 0.0;
                 demo_active_ = false;
                 demo_phase_  = DemoPhase::IDLE;
                 RCLCPP_INFO(this->get_logger(), "[DEMO] Complete");
@@ -459,8 +494,8 @@ void OmniMulinexJoystick::timer_callback()
                     demo_phase_  = DemoPhase::IDLE;
                 } else {
                     set_demo_phase(resume);           // NOT transition_demo — never go through delay again
-                    RCLCPP_INFO(this->get_logger(), "[DEMO] Delay done, resuming to phase %d",
-                                static_cast<int>(resume));
+                    // RCLCPP_INFO(this->get_logger(), "[DEMO] Delay done, resuming to phase %d",
+                    //             static_cast<int>(resume));
                 }
                 break;
             }
@@ -581,19 +616,19 @@ void OmniMulinexJoystick::set_demo_phase(DemoPhase phase)
     demo_phase_elapsed_  = 0.0;
 
     switch (phase) {
-        case DemoPhase::ACTIVATE_IK:
-            demo_current_phase_duration_ = timer_period_ms_ * 1e-3;
-            break;
+        case DemoPhase::RESET:
+        case DemoPhase::ACTIVATE_IK:            
         case DemoPhase::RISE:
         case DemoPhase::SINK:
-        case DemoPhase::BASE_RISE:
-            demo_current_phase_duration_ = demo_pose_time_;
-            break;
-        case DemoPhase::BASE_LOWER:
+            demo_current_phase_duration_ = timer_period_ms_ * 1e-3;
+                break;
+        case DemoPhase::BASE_RISE:   case DemoPhase::BASE_LOWER:
         case DemoPhase::YAW_RIGHT:   case DemoPhase::YAW_LEFT:
         case DemoPhase::YAW_RIGHT_HIGH: case DemoPhase::YAW_LEFT_HIGH:
         case DemoPhase::PITCH_FORWARD:  case DemoPhase::PITCH_BACKWARD:
+        case DemoPhase::PITCH_INVERSE:  case DemoPhase::PITCH_HOME:
         case DemoPhase::ROLL_RIGHT:     case DemoPhase::ROLL_LEFT:
+        case DemoPhase::ROLL_INVERSE:   case DemoPhase::ROLL_HOME:
         case DemoPhase::BASE_FORWARD:   case DemoPhase::BASE_BACKWARD:
             demo_current_phase_duration_ = demo_pose_time_;
             break;
