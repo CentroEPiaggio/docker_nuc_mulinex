@@ -17,3 +17,14 @@ omni_mulinex_joystick:
     max_pos_y: 0.05
     deadzone: 0.1
     subscribe_state: true
+
+    demo:
+      area_width:     0.5
+      area_depth:     0.5
+      travel_time:    1.0
+      pose_time:      1.0
+      yaw_angle:      1.5708
+      pitch_angle:    0.2
+      roll_angle:     0.2
+      base_x_:        0.2
+      base_z_:        0.05
