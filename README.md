@@ -66,6 +66,8 @@ Activate the joystick with
 ros2 launch omni_bringup omni_bringup.launch.py [record_bag:={false|true}]
 ```
 
+Press `SELECT` on the joystick to start a scripted **demo cycle** that drives the robot through a fixed sequence of base motions (translations + yaw) at rest height, then at standing height, and finally exercises the IK controller through pitch, roll, and base translations before lowering back to rest. Press `SELECT` again at any time to interrupt: the robot resets its pose, deactivates IK, and returns to rest. The full button mapping is printed in the joystick node log on startup.
+
 Launch the lidar with
 ```shell
 ros2 launch sllidar_ros2 view_sllidar_s2e_launch.py device_ip:=192.168.11.2
