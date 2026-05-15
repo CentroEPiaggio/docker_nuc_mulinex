@@ -35,8 +35,8 @@ OmniMulinexJoystick::OmniMulinexJoystick(): Node("omni_mulinex_joystick")
     this->declare_parameter("demo.yaw_angle",    1.5708); // radians (≈90°)
     this->declare_parameter("demo.pitch_angle",  0.2);    // radians
     this->declare_parameter("demo.roll_angle",   0.2);    // radians
-    this->declare_parameter("demo.base_x_", 0.2);  
-    this->declare_parameter("demo.base_z_", 0.05); 
+    this->declare_parameter("demo.base_x", 0.2);
+    this->declare_parameter("demo.base_z", 0.05);
 
     // Read parameters
     sup_vel_x_ = this->get_parameter("sup_vel_x").as_double();
@@ -63,8 +63,8 @@ OmniMulinexJoystick::OmniMulinexJoystick(): Node("omni_mulinex_joystick")
     demo_yaw_angle_   = this->get_parameter("demo.yaw_angle").as_double();
     demo_pitch_angle_  = this->get_parameter("demo.pitch_angle").as_double();
     demo_roll_angle_  = this->get_parameter("demo.roll_angle").as_double();
-    demo_base_x_  = this->get_parameter("demo.base_x_").as_double();
-    demo_base_z_  = this->get_parameter("demo.base_z_").as_double();
+    demo_base_x_  = this->get_parameter("demo.base_x").as_double();
+    demo_base_z_  = this->get_parameter("demo.base_z").as_double();
 
 
     // Twist publisher with BestEffort QoS and deadline
@@ -136,13 +136,11 @@ void OmniMulinexJoystick::joy_callback(const sensor_msgs::msg::Joy::SharedPtr ms
             transition_demo(DemoPhase::RESET);
             RCLCPP_INFO(this->get_logger(), "Demo started");
         } else {
-            demo_active_ = false;
-            transition_demo(DemoPhase::IDLE, 0.0);
+            // Route the interrupt through SINK so the robot ends in a safe state.
+            transition_demo(DemoPhase::SINK);
             RCLCPP_INFO(this->get_logger(), "Demo interrupted");
         }
     }
-
-
 
     // ── Store analog stick values ───────────────────────────────────────
     if (axes.size() > 0)
@@ -448,7 +446,7 @@ void OmniMulinexJoystick::timer_callback()
             case DemoPhase::MOVE_BACKWARD:      transition_demo(DemoPhase::YAW_RIGHT);             RCLCPP_INFO(this->get_logger(), "[DEMO] MOVE_BACKWARD done");      break;
             case DemoPhase::YAW_RIGHT:          transition_demo(DemoPhase::YAW_LEFT);              RCLCPP_INFO(this->get_logger(), "[DEMO] YAW_RIGHT done");          break;
             case DemoPhase::YAW_LEFT:
-                body_yaw_ = 0.0;
+                body_yaw_ = 0.0;  // guard: IK pose yaw should already be 0 here (only set in L2-held branch)
                 transition_demo(DemoPhase::RISE);                                                   RCLCPP_INFO(this->get_logger(), "[DEMO] YAW_LEFT done");           break;
             case DemoPhase::RISE:               transition_demo(DemoPhase::MOVE_RIGHT_HIGH, 5.0);       RCLCPP_INFO(this->get_logger(), "[DEMO] RISE done");               break;
             case DemoPhase::MOVE_RIGHT_HIGH:    transition_demo(DemoPhase::MOVE_LEFT_HIGH);        RCLCPP_INFO(this->get_logger(), "[DEMO] MOVE_RIGHT_HIGH done");    break;
@@ -457,7 +455,7 @@ void OmniMulinexJoystick::timer_callback()
             case DemoPhase::MOVE_BACKWARD_HIGH: transition_demo(DemoPhase::YAW_RIGHT_HIGH);        RCLCPP_INFO(this->get_logger(), "[DEMO] MOVE_BACKWARD_HIGH done"); break;
             case DemoPhase::YAW_RIGHT_HIGH:     transition_demo(DemoPhase::YAW_LEFT_HIGH);         RCLCPP_INFO(this->get_logger(), "[DEMO] YAW_RIGHT_HIGH done");     break;
             case DemoPhase::YAW_LEFT_HIGH:
-                body_yaw_ = 0.0;
+                body_yaw_ = 0.0;  // guard: IK pose yaw should already be 0 here (only set in L2-held branch)
                 transition_demo(DemoPhase::ACTIVATE_IK);                                            RCLCPP_INFO(this->get_logger(), "[DEMO] YAW_LEFT_HIGH done");      break;
             case DemoPhase::ACTIVATE_IK:        transition_demo(DemoPhase::PITCH_FORWARD, 3.0);         RCLCPP_INFO(this->get_logger(), "[DEMO] ACTIVATE_IK done");        break;
             case DemoPhase::PITCH_FORWARD:      transition_demo(DemoPhase::PITCH_BACKWARD);        RCLCPP_INFO(this->get_logger(), "[DEMO] PITCH_FORWARD done");      break;
@@ -465,13 +463,13 @@ void OmniMulinexJoystick::timer_callback()
             case DemoPhase::PITCH_INVERSE:      transition_demo(DemoPhase::PITCH_HOME);            RCLCPP_INFO(this->get_logger(), "[DEMO] PITCH_INVERSE done");     break;
             case DemoPhase::PITCH_HOME:
                 body_pitch_ = 0.0;
-                transition_demo(DemoPhase::ROLL_RIGHT);                                             RCLCPP_INFO(this->get_logger(), "[DEMO] PITCH_BACKWARD done");     break;
+                transition_demo(DemoPhase::ROLL_RIGHT);                                             RCLCPP_INFO(this->get_logger(), "[DEMO] PITCH_HOME done");         break;
             case DemoPhase::ROLL_RIGHT:         transition_demo(DemoPhase::ROLL_LEFT);             RCLCPP_INFO(this->get_logger(), "[DEMO] ROLL_RIGHT done");         break;
             case DemoPhase::ROLL_LEFT:          transition_demo(DemoPhase::ROLL_INVERSE);          RCLCPP_INFO(this->get_logger(), "[DEMO] ROLL_LEFT done");          break;
             case DemoPhase::ROLL_INVERSE:       transition_demo(DemoPhase::ROLL_HOME);          RCLCPP_INFO(this->get_logger(), "[DEMO] ROLL_INVERSE done");         break;
             case DemoPhase::ROLL_HOME:
                 body_roll_ = 0.0;
-                transition_demo(DemoPhase::BASE_FORWARD);                                           RCLCPP_INFO(this->get_logger(), "[DEMO] ROLL_LEFT done");          break;
+                transition_demo(DemoPhase::BASE_FORWARD);                                           RCLCPP_INFO(this->get_logger(), "[DEMO] ROLL_HOME done");          break;
             case DemoPhase::BASE_FORWARD:       transition_demo(DemoPhase::BASE_BACKWARD);         RCLCPP_INFO(this->get_logger(), "[DEMO] BASE_FORWARD done");       break;
             case DemoPhase::BASE_BACKWARD:
                 body_x_ = 0.0;
@@ -494,8 +492,6 @@ void OmniMulinexJoystick::timer_callback()
                     demo_phase_  = DemoPhase::IDLE;
                 } else {
                     set_demo_phase(resume);           // NOT transition_demo — never go through delay again
-                    // RCLCPP_INFO(this->get_logger(), "[DEMO] Delay done, resuming to phase %d",
-                    //             static_cast<int>(resume));
                 }
                 break;
             }

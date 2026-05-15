@@ -26,5 +26,5 @@ omni_mulinex_joystick:
       yaw_angle:      1.5708
       pitch_angle:    0.2
       roll_angle:     0.2
-      base_x_:        0.2
-      base_z_:        0.05
+      base_x:         0.2
+      base_z:         0.05
