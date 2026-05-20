@@ -14,7 +14,7 @@ namespace omni_mulinex_joystick {
 // Demo state
 enum class DemoPhase { 
     IDLE, 
-    RESET,
+    RESET,                  ACTIVATE,
     MOVE_RIGHT,             MOVE_LEFT, 
     MOVE_FORWARD,           MOVE_BACKWARD, 
     YAW_RIGHT,              YAW_LEFT,

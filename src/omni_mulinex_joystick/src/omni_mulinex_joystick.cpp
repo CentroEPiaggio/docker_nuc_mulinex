@@ -302,6 +302,7 @@ void OmniMulinexJoystick::timer_callback()
                 body_x_ = body_y_ = body_height_ = 0.0;
                 body_roll_ = body_pitch_ = body_yaw_ = 0.0;
                 deactivate_ik();
+
                 auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
                 req->data = true;
                 if (rest_client_->service_is_ready()) {
@@ -309,7 +310,21 @@ void OmniMulinexJoystick::timer_callback()
                     RCLCPP_INFO(this->get_logger(), "Rest service called");
                 } else {
                     RCLCPP_WARN(this->get_logger(), "Rest service not available");
-                }                         
+                }               
+                  
+                break;
+            }
+            case DemoPhase::ACTIVATE: {
+
+                auto req_ = std::make_shared<std_srvs::srv::SetBool::Request>();
+                req_->data = true;
+                if (activate_client_->service_is_ready()) {
+                    activate_client_->async_send_request(req_);
+                    RCLCPP_INFO(this->get_logger(), "Activate service called");
+                } else {
+                    RCLCPP_WARN(this->get_logger(), "Activate service not available");
+                }                   
+                  
                 break;
             }
             case DemoPhase::MOVE_RIGHT:         twist_msg.linear.y = -vel_y;        break;
@@ -439,7 +454,8 @@ void OmniMulinexJoystick::timer_callback()
 
     if (demo_phase_elapsed_ >= demo_current_phase_duration_) {
         switch (demo_phase_) {
-            case DemoPhase::RESET:              transition_demo(DemoPhase::MOVE_RIGHT, 5.0);        break;
+            case DemoPhase::RESET:              transition_demo(DemoPhase::ACTIVATE, 5.0);        break;
+            case DemoPhase::ACTIVATE:           transition_demo(DemoPhase::MOVE_RIGHT, 2.0);       break;
             case DemoPhase::MOVE_RIGHT:         transition_demo(DemoPhase::MOVE_LEFT);             RCLCPP_INFO(this->get_logger(), "[DEMO] MOVE_RIGHT done");         break;
             case DemoPhase::MOVE_LEFT:          transition_demo(DemoPhase::MOVE_FORWARD);          RCLCPP_INFO(this->get_logger(), "[DEMO] MOVE_LEFT done");          break;
             case DemoPhase::MOVE_FORWARD:       transition_demo(DemoPhase::MOVE_BACKWARD);         RCLCPP_INFO(this->get_logger(), "[DEMO] MOVE_FORWARD done");       break;
