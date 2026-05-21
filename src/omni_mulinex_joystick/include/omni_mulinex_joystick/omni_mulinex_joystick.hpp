@@ -11,6 +11,29 @@
 
 namespace omni_mulinex_joystick {
 
+// Demo state
+enum class DemoPhase { 
+    IDLE, 
+    RESET,                  ACTIVATE,
+    MOVE_RIGHT,             MOVE_LEFT, 
+    MOVE_FORWARD,           MOVE_BACKWARD, 
+    YAW_RIGHT,              YAW_LEFT,
+    RISE,     
+    MOVE_RIGHT_HIGH,        MOVE_LEFT_HIGH, 
+    MOVE_FORWARD_HIGH,      MOVE_BACKWARD_HIGH,
+    YAW_RIGHT_HIGH,         YAW_LEFT_HIGH,
+    ACTIVATE_IK,
+    PITCH_FORWARD,          PITCH_BACKWARD,
+    PITCH_INVERSE,          PITCH_HOME,
+    ROLL_RIGHT,             ROLL_LEFT,
+    ROLL_INVERSE,           ROLL_HOME,
+    BASE_FORWARD,           BASE_BACKWARD,
+    BASE_RISE,              BASE_LOWER,
+    SINK, 
+    DELAY,
+};
+
+
 class OmniMulinexJoystick: public rclcpp::Node {
 public:
     OmniMulinexJoystick();
@@ -21,6 +44,8 @@ private:
     void state_callback(const pi3hat_moteus_int_msgs::msg::JointsStates::SharedPtr msg);
     void deactivate_ik();
     void print_instructions();
+    void set_demo_phase(DemoPhase phase);
+    void transition_demo(DemoPhase next, double delay_s = 0.7);
 
     // Publishers
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr twist_pub_;
@@ -59,6 +84,25 @@ private:
     double deadzone_;
     int timer_period_ms_;
     bool subscribe_state_;
+
+    // Demo parameters
+    double demo_area_width_;
+    double demo_area_depth_;
+    double demo_travel_time_;
+    double demo_yaw_angle_;
+    double demo_pitch_angle_;
+    double demo_roll_angle_;
+    double demo_pose_time_;
+    double demo_base_x_;
+    double demo_base_z_;
+    double demo_current_phase_duration_{0.0};  // set when entering each phase
+
+    // Demo runtime state
+    bool       demo_active_{false};
+    DemoPhase  demo_phase_{DemoPhase::IDLE};
+    double     demo_phase_elapsed_{0.0};
+    DemoPhase demo_next_phase_{DemoPhase::IDLE};
+    double    demo_delay_time_{0.0};
 
     // Stored joystick analog inputs
     double joy_left_x_ = 0.0;

@@ -39,6 +39,12 @@ RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
     tmux \
     xterm
 
+# Install prompt script to /etc/profile.d so it runs for interactive shells
+COPY docker/ros_prompt.sh /etc/profile.d/ros_prompt.sh
+RUN chmod 755 /etc/profile.d/ros_prompt.sh
+RUN echo 'source /etc/profile.d/ros_prompt.sh' >> /etc/bash.bashrc
+RUN sed -i '1i source /etc/profile.d/ros_prompt.sh' /etc/bash.bashrc || true
+
 ARG MYUID=1000
 ARG MYGID=1000
 ARG USER=ros
@@ -76,15 +82,16 @@ WORKDIR /home/${USER}/${WORKSPACE}
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
 RUN pip3 install --user numpy
 
-# Set up environment
-RUN echo "" >> ~/.bashrc \
- && echo "## ROS 2" >> ~/.bashrc \
- && echo 'source /opt/ros/$ROS_DISTRO/setup.bash' >> ~/.bashrc \
- && echo "source /usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash" >> ~/.bashrc \
- && echo "source /home/${USER}/${WORKSPACE}/install/setup.bash" >> ~/.bashrc
+# Set up environment and persistent PS1 for interactive shells
+RUN printf '%s\n' "" "## ROS 2" \
+    'source /opt/ros/$ROS_DISTRO/setup.bash' \
+    'source /usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash' \
+    "source /home/${USER}/${WORKSPACE}/install/setup.bash" \
+    >> ~/.bashrc
 
 # Change entrypoint to source ~/.bashrc and start in ~
-COPY ./docker/.config/entrypoint.sh /ros_entrypoint.sh
+# When building from repo root (context .) the entrypoint is at docker/.config/
+COPY docker/.config/entrypoint.sh /ros_entrypoint.sh
 RUN sudo chmod +x /ros_entrypoint.sh ; sudo chown ${USER} /ros_entrypoint.sh \
  && echo 'exec bash -i -c "$@"' >> /ros_entrypoint.sh \
  && cat /ros_entrypoint.sh

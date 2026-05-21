@@ -61,6 +61,12 @@ class IKController(Node):
         self.create_subscription(
             JointsStates, '/omni_controller/joints_state', self.joint_states_callback, 1
         )
+        self.create_subscription(
+            JointsCommand,
+            '/omni_controller/debug/joints_command',
+            self.joints_command_callback,
+            1,
+        )
 
         # Publisher
         self.joint_command_pub = self.create_publisher(
@@ -89,6 +95,10 @@ class IKController(Node):
 
         self.joint_positions = np.zeros(n_joints)
         self.joint_ref = np.zeros(n_joints)
+        # Last commanded positions echoed by omni_controller. Used to seed the IK
+        # on activation so we don't snapshot the gravity-sagged measured pose.
+        self.commanded_positions = np.zeros(n_joints)
+        self.commanded_received = False
 
         self.initial_feet_pos = []
 
@@ -124,13 +134,34 @@ class IKController(Node):
                 idx = self.robot_model.joint_names.index(joint_name)
                 self.joint_positions[idx] = msg.position[i]
 
-        # Initialize on first valid message (only when active)
+        # Initialize on first valid message (only when active).
+        # Seed from the last commanded pose, not the measured pose: the legs
+        # sag a few mrad below the command under gravity, and snapshotting the
+        # sagged config would drop the body each time IK is (re)activated.
         if self.active and not self.initialized and len(msg.position) > 0:
+            if not self.commanded_received:
+                self.get_logger().warn(
+                    'IK activated but no joints_command received yet; deferring initialization',
+                    throttle_duration_sec=1.0,
+                )
+                return
             self.initialized = True
-            self.joint_ref = self.joint_positions.copy()
-            self.robot_model.compute_kinematics(self.joint_positions)
+            self.joint_ref = self.commanded_positions.copy()
+            self.robot_model.compute_kinematics(self.commanded_positions)
             self.initial_feet_pos = copy.deepcopy(self.robot_model.get_feet_pos())
-            self.get_logger().info('IK controller initialized from joint states')
+            self.get_logger().info('IK controller initialized from commanded joint positions')
+
+    def joints_command_callback(self, msg: JointsCommand):
+        # Mirror the joint_states reordering. Skip NaN entries (wheels in IK
+        # mode publish NaN positions) and entries for joints we don't model.
+        for i, joint_name in enumerate(msg.name):
+            if joint_name not in self.robot_model.joint_names:
+                continue
+            if i >= len(msg.position) or np.isnan(msg.position[i]):
+                continue
+            idx = self.robot_model.joint_names.index(joint_name)
+            self.commanded_positions[idx] = msg.position[i]
+            self.commanded_received = True
 
     def base_pose_command_callback(self, msg: Pose):
         self.position_command = np.array([msg.position.x, msg.position.y, msg.position.z])
