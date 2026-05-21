@@ -1,5 +1,7 @@
 COMPOSE = docker compose -f docker/compose.yaml
 
+.PHONY: build run start attach stop
+
 build:
 	bash docker/build.bash
 
