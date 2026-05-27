@@ -55,6 +55,16 @@
             letter-spacing: -0.05em;
         }
 
+        .huge-time {
+            font-size: clamp(3.75rem, 10vw, 8rem);
+            line-height: 0.85;
+        }
+
+        .huge-active-time {
+            font-size: clamp(3rem, 8vw, 7rem);
+            line-height: 0.9;
+        }
+
         .muted-line {
             position: relative;
         }
@@ -75,12 +85,11 @@
         <div class="absolute bottom-0 left-1/2 h-[28rem] w-[28rem] -translate-x-1/2 rounded-full bg-sky-500/10 blur-3xl"></div>
     </div>
 
-    <main class="relative z-10 mx-auto flex min-h-screen w-full max-w-[1600px] flex-col gap-6 px-4 py-4 sm:px-6 lg:px-8">
+    <main class="relative z-10 mx-auto flex min-h-screen w-full max-w-[1800px] flex-col gap-6 px-4 py-4 sm:px-6 lg:px-8">
         <header class="muted-line flex flex-col gap-4 pb-5 lg:flex-row lg:items-end lg:justify-between">
             <div class="space-y-2">
                 <p class="text-xs uppercase tracking-[0.38em] text-slate-400">Live telemetry</p>
                 <h1 class="text-4xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">Omnirace Dashboard</h1>
-                <p class="max-w-2xl text-sm text-slate-300 sm:text-base">A high-signal race view with live metrics, run snapshots, and a local leaderboard that archives each completed attempt.</p>
             </div>
             <div class="flex flex-wrap gap-3">
                 <div id="connection-status" class="rounded-full border border-red-500/30 bg-red-950/80 px-4 py-2 text-sm font-semibold text-red-300">
@@ -92,13 +101,13 @@
             </div>
         </header>
 
-        <div class="grid flex-1 grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(360px,0.9fr)]">
+        <div class="grid flex-1 grid-cols-1 gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(320px,0.8fr)]">
             <section class="grid gap-6">
                 <section class="glass rounded-[2rem] p-6 sm:p-8">
                     <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                        <div class="space-y-3">
+                        <div class="space-y-3 min-w-0">
                             <p class="text-xs uppercase tracking-[0.35em] text-slate-400">Current run</p>
-                            <div id="ui-team" class="text-4xl font-black tracking-tight text-amber-300 sm:text-5xl lg:text-6xl">Waiting for telemetry</div>
+                            <div id="ui-team" class="text-4xl font-black tracking-tight text-amber-300 break-words sm:text-5xl lg:text-6xl">Waiting for telemetry</div>
                             <div class="flex flex-wrap items-center gap-3 text-sm text-slate-300">
                                 <span id="ui-run-source" class="rounded-full border border-white/10 bg-white/5 px-3 py-1 mono">No run source yet</span>
                                 <span id="ui-run-topic" class="rounded-full border border-white/10 bg-white/5 px-3 py-1 mono">/omnirace_telemetry</span>
@@ -110,29 +119,23 @@
                         </div>
                     </div>
 
-                    <div class="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-                        <div class="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
+                    <div class="mt-8 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,0.85fr)]">
+                        <div class="rounded-[1.75rem] border border-white/10 bg-white/5 p-6 sm:p-7">
                             <p class="mb-2 text-xs uppercase tracking-[0.35em] text-slate-400">Elapsed time</p>
-                            <div id="ui-time" class="metric mono text-6xl font-black tabular-nums leading-none sm:text-7xl">0.00</div>
+                            <div id="ui-time" class="metric huge-time mono font-black tabular-nums tracking-tight text-white">0.00</div>
                         </div>
-                        <div class="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
-                            <p class="mb-2 text-xs uppercase tracking-[0.35em] text-slate-400">Penalties</p>
-                            <div class="metric mono text-6xl font-black tabular-nums leading-none text-rose-400 sm:text-7xl">
-                                <span id="ui-penalties">0.00</span><span class="ml-2 text-3xl text-slate-400">cm</span>
+                        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
+                            <div class="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
+                                <p class="mb-2 text-xs uppercase tracking-[0.35em] text-slate-400">Penalties</p>
+                                <div class="metric mono text-4xl font-black tabular-nums leading-none text-rose-400 sm:text-5xl xl:text-6xl">
+                                    <span id="ui-penalties">0.00</span><span class="ml-2 text-2xl text-slate-400 xl:text-3xl">cm</span>
+                                </div>
                             </div>
-                        </div>
-                        <div class="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
-                            <p class="mb-2 text-xs uppercase tracking-[0.35em] text-slate-400">Waypoint</p>
-                            <div class="metric mono text-5xl font-black tabular-nums text-emerald-300 sm:text-6xl">
-                                <span id="ui-wp">0</span><span class="text-slate-500">/</span><span id="ui-total-wp">0</span>
-                            </div>
-                        </div>
-                        <div class="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
-                            <p class="mb-2 text-xs uppercase tracking-[0.35em] text-slate-400">Current snapshot</p>
-                            <div class="space-y-1 text-sm text-slate-300">
-                                <div class="flex items-center justify-between gap-4"><span>vx</span><span id="ui-vx" class="mono text-lg font-semibold text-white">0.00</span></div>
-                                <div class="flex items-center justify-between gap-4"><span>vy</span><span id="ui-vy" class="mono text-lg font-semibold text-white">0.00</span></div>
-                                <div class="flex items-center justify-between gap-4"><span>wz</span><span id="ui-wz" class="mono text-lg font-semibold text-white">0.00</span></div>
+                            <div class="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
+                                <p class="mb-2 text-xs uppercase tracking-[0.35em] text-slate-400">Waypoint</p>
+                                <div class="metric mono text-4xl font-black tabular-nums text-emerald-300 sm:text-5xl">
+                                    <span id="ui-wp">0</span><span class="text-slate-500">/</span><span id="ui-total-wp">0</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -147,57 +150,26 @@
                         <div id="ui-active-run-state" class="rounded-full border border-white/10 bg-white/5 px-4 py-2 mono text-sm text-slate-300">IDLE</div>
                     </div>
 
-                    <div class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-                        <div class="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
-                            <p class="mb-1 text-xs uppercase tracking-[0.35em] text-slate-400">Run label</p>
-                            <div id="ui-active-run-name" class="mono text-xl font-semibold text-amber-200 break-all">Waiting</div>
+                    <div class="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+                        <div class="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+                            <p class="mb-2 text-xs uppercase tracking-[0.35em] text-slate-400">Run time</p>
+                            <div id="ui-active-run-time" class="huge-active-time mono font-black text-white">0.00s</div>
                         </div>
-                        <div class="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
-                            <p class="mb-1 text-xs uppercase tracking-[0.35em] text-slate-400">Source</p>
-                            <div id="ui-active-run-source" class="mono text-xl font-semibold text-sky-200 break-all">Unknown</div>
-                        </div>
-                        <div class="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
-                            <p class="mb-1 text-xs uppercase tracking-[0.35em] text-slate-400">Last update</p>
-                            <div id="ui-active-run-updated" class="mono text-xl font-semibold text-white">--</div>
-                        </div>
-                    </div>
-
-                    <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
-                        <div class="rounded-[1.5rem] border border-white/10 bg-slate-950/60 p-5">
-                            <p class="mb-1 text-xs uppercase tracking-[0.35em] text-slate-400">Run time</p>
-                            <div id="ui-active-run-time" class="mono text-4xl font-black text-white">0.00s</div>
-                        </div>
-                        <div class="rounded-[1.5rem] border border-white/10 bg-slate-950/60 p-5">
-                            <p class="mb-1 text-xs uppercase tracking-[0.35em] text-slate-400">Penalty</p>
-                            <div id="ui-active-run-penalties" class="mono text-4xl font-black text-rose-300">0.00 cm</div>
-                        </div>
-                        <div class="rounded-[1.5rem] border border-white/10 bg-slate-950/60 p-5">
-                            <p class="mb-1 text-xs uppercase tracking-[0.35em] text-slate-400">Waypoints</p>
-                            <div id="ui-active-run-waypoints" class="mono text-4xl font-black text-emerald-300">0/0</div>
+                        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                            <div class="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+                                <p class="mb-2 text-xs uppercase tracking-[0.35em] text-slate-400">Penalty</p>
+                                <div id="ui-active-run-penalties" class="mono text-4xl font-black leading-none text-rose-300 sm:text-5xl">0.00 cm</div>
+                            </div>
+                            <div class="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+                                <p class="mb-2 text-xs uppercase tracking-[0.35em] text-slate-400">Waypoints</p>
+                                <div id="ui-active-run-waypoints" class="mono text-4xl font-black leading-none text-emerald-300 sm:text-5xl">0/0</div>
+                            </div>
                         </div>
                     </div>
                 </section>
             </section>
 
             <aside class="grid content-start gap-6">
-                <section class="glass rounded-[2rem] p-6">
-                    <p class="text-xs uppercase tracking-[0.35em] text-slate-400">Telemetry source</p>
-                    <div class="mt-4 space-y-3 rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
-                        <div>
-                            <div class="mb-1 text-sm text-slate-400">Topic</div>
-                            <div id="ui-topic" class="mono break-all text-lg text-slate-100">/omnirace_telemetry</div>
-                        </div>
-                        <div>
-                            <div class="mb-1 text-sm text-slate-400">Command node</div>
-                            <div id="ui-cmd-source" class="mono break-all text-lg text-cyan-200">Unknown</div>
-                        </div>
-                        <div class="flex flex-wrap gap-2 pt-1 text-xs text-slate-300">
-                            <span class="rounded-full border border-white/10 bg-slate-950/50 px-3 py-1">State changes archive runs locally</span>
-                            <span class="rounded-full border border-white/10 bg-slate-950/50 px-3 py-1">Sorted by time then penalties</span>
-                        </div>
-                    </div>
-                </section>
-
                 <section class="glass rounded-[2rem] p-6">
                     <div class="flex items-center justify-between gap-4">
                         <div>
@@ -207,16 +179,6 @@
                         <div id="ui-leaderboard-count" class="rounded-full border border-white/10 bg-white/5 px-4 py-2 mono text-sm text-slate-300">0 runs</div>
                     </div>
                     <div id="ui-leaderboard" class="mt-5 space-y-3"></div>
-                </section>
-
-                <section class="glass rounded-[2rem] p-6">
-                    <p class="text-xs uppercase tracking-[0.35em] text-slate-400">Payload</p>
-                    <pre id="ui-payload" class="mt-4 max-h-80 min-h-56 overflow-auto rounded-[1.5rem] border border-white/10 bg-slate-950/80 p-4 text-xs leading-6 text-slate-300">Waiting for data...</pre>
-                </section>
-
-                <section class="rounded-[2rem] border border-amber-500/20 bg-amber-500/10 p-5 text-sm text-amber-100">
-                    <p class="mb-1 font-semibold">Connection hint</p>
-                    <p>Make sure rosbridge is running and reachable from this browser. If you use a remote robot, replace <span class="mono">localhost</span> in the script. The leaderboard is stored in this browser.</p>
                 </section>
             </aside>
         </div>
@@ -237,6 +199,7 @@
             leaderboard: loadStoredRuns(),
             activeRun: loadStoredActiveRun(),
             currentState: null,
+            archivedRunIds: new Set(loadStoredRuns().map((run) => run.id).filter(Boolean)),
         };
 
         function setStatus(text, connected) {
@@ -434,7 +397,7 @@
         function syncActiveRun(state, topicName) {
             const runName = buildRunName(state);
             const sourceName = compactSourceName(state.cmd_source ?? state.cmd_source_node ?? 'Unknown');
-            const shouldStartFresh = !runtime.activeRun || runtime.activeRun.run_name !== runName || runtime.activeRun.team_name !== normalizeText(state.team_name, 'UNKNOWN');
+            const shouldStartFresh = !runtime.activeRun || runtime.activeRun.run_name !== runName || runtime.activeRun.team_name !== normalizeText(state.team_name, 'UNKNOWN') || (runtime.activeRun.completed_at !== null && state.status === 'READY');
 
             if (shouldStartFresh) {
                 runtime.activeRun = createActiveRun(state, topicName);
@@ -454,18 +417,20 @@
                 runtime.activeRun.raw = state.raw;
                 if (state.status === 'FINISHED') {
                     runtime.activeRun.completed_at = runtime.activeRun.completed_at ?? Date.now();
+                } else if (state.status === 'READY') {
+                    runtime.activeRun.completed_at = null;
                 }
             }
 
             persistActiveRun();
         }
 
-        function archiveActiveRunIfReady(nextStatus) {
-            if (!runtime.activeRun || runtime.activeRun.completed_at === null) {
+        function archiveActiveRunIfFinished(nextStatus) {
+            if (!runtime.activeRun || runtime.activeRun.completed_at === null || nextStatus !== 'FINISHED') {
                 return;
             }
 
-            if (nextStatus !== 'READY') {
+            if (runtime.archivedRunIds.has(runtime.activeRun.id)) {
                 return;
             }
 
@@ -474,7 +439,9 @@
                 finished_at: new Date(runtime.activeRun.completed_at).toISOString(),
             };
 
-            runtime.leaderboard = [archivedRun, ...runtime.leaderboard]
+            runtime.archivedRunIds.add(archivedRun.id);
+
+            runtime.leaderboard = [archivedRun, ...runtime.leaderboard.filter((run) => run.id !== archivedRun.id)]
                 .sort((left, right) => {
                     const timeDelta = safeNumber(left.elapsed_time, 0) - safeNumber(right.elapsed_time, 0);
                     if (Math.abs(timeDelta) > 1e-9) {
@@ -490,7 +457,6 @@
                 })
                 .slice(0, MAX_LEADERBOARD_ROWS);
 
-            runtime.activeRun = null;
             persistLeaderboard();
             persistActiveRun();
             renderLeaderboard();
@@ -500,9 +466,6 @@
             const activeRun = runtime.activeRun;
             const title = document.getElementById('ui-active-run-title');
             const stateBadge = document.getElementById('ui-active-run-state');
-            const runName = document.getElementById('ui-active-run-name');
-            const source = document.getElementById('ui-active-run-source');
-            const updated = document.getElementById('ui-active-run-updated');
             const elapsed = document.getElementById('ui-active-run-time');
             const penalties = document.getElementById('ui-active-run-penalties');
             const waypoints = document.getElementById('ui-active-run-waypoints');
@@ -511,9 +474,6 @@
                 title.innerText = 'No active run yet';
                 stateBadge.innerText = 'IDLE';
                 stateBadge.className = `rounded-full border px-4 py-2 mono text-sm ${topicColorClass('IDLE')}`;
-                runName.innerText = 'Waiting';
-                source.innerText = 'Unknown';
-                updated.innerText = '--';
                 elapsed.innerText = '0.00s';
                 penalties.innerText = '0.00 cm';
                 waypoints.innerText = '0/0';
@@ -523,9 +483,6 @@
             title.innerText = activeRun.display_name || activeRun.run_name;
             stateBadge.innerText = activeRun.status;
             stateBadge.className = `rounded-full border px-4 py-2 mono text-sm ${topicColorClass(activeRun.status)}`;
-            runName.innerText = activeRun.run_name;
-            source.innerText = activeRun.cmd_source;
-            updated.innerText = formatDateTime(activeRun.updated_at);
             elapsed.innerText = formatRunDuration(activeRun.elapsed_time);
             penalties.innerText = formatPenalty(activeRun.penalties);
             waypoints.innerText = formatWaypoint(activeRun.current_wp, activeRun.total_wp);
@@ -540,7 +497,7 @@
             if (runtime.leaderboard.length === 0) {
                 board.innerHTML = `
                     <div class="rounded-[1.5rem] border border-dashed border-white/10 bg-white/5 p-5 text-sm text-slate-400">
-                        No saved runs yet. Finish a run and return to READY to archive it here.
+                        No saved runs yet. Finish a run and it will archive here automatically.
                     </div>
                 `;
                 return;
@@ -595,22 +552,12 @@
             document.getElementById('ui-wp').innerText = state.current_wp;
             document.getElementById('ui-total-wp').innerText = state.total_wp;
             document.getElementById('ui-penalties').innerText = state.penalties.toFixed(2);
-            document.getElementById('ui-vx').innerText = state.cmd_vel.vx.toFixed(2);
-            document.getElementById('ui-vy').innerText = state.cmd_vel.vy.toFixed(2);
-            document.getElementById('ui-wz').innerText = state.cmd_vel.wz.toFixed(2);
-            document.getElementById('ui-topic').innerText = topicName;
             document.getElementById('ui-run-topic').innerText = state.cmd_source_topic || topicName;
-            document.getElementById('ui-cmd-source').innerText = compactSourceName(state.cmd_source);
             document.getElementById('ui-run-source').innerText = compactSourceName(state.cmd_source);
-            document.getElementById('ui-payload').innerText = JSON.stringify(state.raw, null, 2);
             updateStatusBadge(state.status, state.status);
 
             syncActiveRun(state, topicName);
-            archiveActiveRunIfReady(state.status);
-
-            if (!runtime.activeRun && state.status !== 'READY') {
-                syncActiveRun(state, topicName);
-            }
+            archiveActiveRunIfFinished(state.status);
 
             renderActiveRun(state);
         }
@@ -625,7 +572,7 @@
             topic.subscribe(function(message) {
                 const state = parseTelemetry(message);
                 if (!state) {
-                    document.getElementById('ui-payload').innerText = 'Received telemetry, but the payload format is not valid JSON.';
+                    console.warn('Received telemetry, but the payload format is not valid JSON.');
                     return;
                 }
                 renderTelemetry(state, topicName);
@@ -636,19 +583,14 @@
             renderLeaderboard();
             renderActiveRun({
                 status: runtime.activeRun?.status || 'IDLE',
-                team_name: runtime.activeRun?.team_name || 'UNKNOWN',
-                cmd_source: runtime.activeRun?.cmd_source || 'Unknown',
-                cmd_source_topic: runtime.activeRun?.cmd_source_topic || '/omnirace_telemetry',
+                display_name: runtime.activeRun?.display_name || runtime.activeRun?.run_name || 'No active run yet',
                 elapsed_time: runtime.activeRun?.elapsed_time || 0,
                 current_wp: runtime.activeRun?.current_wp || 0,
                 total_wp: runtime.activeRun?.total_wp || 0,
                 penalties: runtime.activeRun?.penalties || 0,
-                cmd_vel: { vx: 0, vy: 0, wz: 0 },
-                raw: runtime.activeRun?.raw || {},
             });
 
             if (runtime.activeRun) {
-                document.getElementById('ui-cmd-source').innerText = compactSourceName(runtime.activeRun.cmd_source);
                 document.getElementById('ui-run-source').innerText = compactSourceName(runtime.activeRun.cmd_source);
                 document.getElementById('ui-run-topic').innerText = runtime.activeRun.cmd_source_topic || '/omnirace_telemetry';
             }
@@ -661,7 +603,6 @@
 
         ros.on('error', function(error) {
             console.log('Error connecting to websocket server: ', error);
-            document.getElementById('ui-payload').innerText = 'WebSocket connection error. Check rosbridge and the URL in the script.';
         });
 
         ros.on('close', function() {
