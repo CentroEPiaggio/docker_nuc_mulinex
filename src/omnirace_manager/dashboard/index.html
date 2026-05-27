@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Omnirace Telemetry</title>
+    <meta name="description" content="Live telemetry dashboard for the Omnirace challenge">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Space+Grotesk:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/roslib@1/build/roslib.min.js"></script>
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg-base: #060b16;
+            --bg-panel: rgba(10, 17, 31, 0.72);
+            --bg-panel-strong: rgba(6, 11, 20, 0.88);
+            --border-soft: rgba(255, 255, 255, 0.08);
+            --border-strong: rgba(255, 255, 255, 0.14);
+            --accent: #7dd3fc;
+            --accent-amber: #fbbf24;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background:
+                radial-gradient(circle at 12% 12%, rgba(34, 211, 238, 0.18), transparent 26%),
+                radial-gradient(circle at 88% 20%, rgba(251, 191, 36, 0.14), transparent 24%),
+                radial-gradient(circle at 50% 100%, rgba(96, 165, 250, 0.12), transparent 34%),
+                linear-gradient(180deg, #040814 0%, #081120 44%, #050913 100%);
+            font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+        }
+
+        .glass {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-soft);
+            backdrop-filter: blur(18px);
+            box-shadow: 0 18px 70px rgba(2, 6, 23, 0.4);
+        }
+
+        .glass-strong {
+            background: var(--bg-panel-strong);
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+            letter-spacing: -0.02em;
+        }
+
+        .metric {
+            letter-spacing: -0.05em;
+        }
+
+        .muted-line {
+            position: relative;
+        }
+
+        .muted-line::after {
+            content: '';
+            position: absolute;
+            inset: auto 0 -1px 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+        }
+    </style>
+</head>
+<body class="relative min-h-screen overflow-x-hidden text-white">
+    <div class="pointer-events-none fixed inset-0 overflow-hidden">
+        <div class="absolute -left-24 top-0 h-80 w-80 rounded-full bg-cyan-400/12 blur-3xl"></div>
+        <div class="absolute right-0 top-14 h-96 w-96 rounded-full bg-amber-400/10 blur-3xl"></div>
+        <div class="absolute bottom-0 left-1/2 h-[28rem] w-[28rem] -translate-x-1/2 rounded-full bg-sky-500/10 blur-3xl"></div>
+    </div>
+
+    <main class="relative z-10 mx-auto flex min-h-screen w-full max-w-[1600px] flex-col gap-6 px-4 py-4 sm:px-6 lg:px-8">
+        <header class="muted-line flex flex-col gap-4 pb-5 lg:flex-row lg:items-end lg:justify-between">
+            <div class="space-y-2">
+                <p class="text-xs uppercase tracking-[0.38em] text-slate-400">Live telemetry</p>
+                <h1 class="text-4xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">Omnirace Dashboard</h1>
+                <p class="max-w-2xl text-sm text-slate-300 sm:text-base">A high-signal race view with live metrics, run snapshots, and a local leaderboard that archives each completed attempt.</p>
+            </div>
+            <div class="flex flex-wrap gap-3">
+                <div id="connection-status" class="rounded-full border border-red-500/30 bg-red-950/80 px-4 py-2 text-sm font-semibold text-red-300">
+                    DISCONNECTED
+                </div>
+                <div id="topic-status" class="rounded-full border border-white/10 bg-slate-900/80 px-4 py-2 text-sm font-semibold text-slate-300">
+                    /omnirace_telemetry
+                </div>
+            </div>
+        </header>
+
+        <div class="grid flex-1 grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(360px,0.9fr)]">
+            <section class="grid gap-6">
+                <section class="glass rounded-[2rem] p-6 sm:p-8">
+                    <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                        <div class="space-y-3">
+                            <p class="text-xs uppercase tracking-[0.35em] text-slate-400">Current run</p>
+                            <div id="ui-team" class="text-4xl font-black tracking-tight text-amber-300 sm:text-5xl lg:text-6xl">Waiting for telemetry</div>
+                            <div class="flex flex-wrap items-center gap-3 text-sm text-slate-300">
+                                <span id="ui-run-source" class="rounded-full border border-white/10 bg-white/5 px-3 py-1 mono">No run source yet</span>
+                                <span id="ui-run-topic" class="rounded-full border border-white/10 bg-white/5 px-3 py-1 mono">/omnirace_telemetry</span>
+                            </div>
+                        </div>
+                        <div class="rounded-2xl border border-sky-500/20 bg-sky-500/10 px-5 py-4 text-right">
+                            <p class="text-xs uppercase tracking-[0.35em] text-slate-400">Race state</p>
+                            <div id="ui-status" class="mt-1 text-3xl font-black text-sky-300 sm:text-4xl">IDLE</div>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+                        <div class="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
+                            <p class="mb-2 text-xs uppercase tracking-[0.35em] text-slate-400">Elapsed time</p>
+                            <div id="ui-time" class="metric mono text-6xl font-black tabular-nums leading-none sm:text-7xl">0.00</div>
+                        </div>
+                        <div class="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
+                            <p class="mb-2 text-xs uppercase tracking-[0.35em] text-slate-400">Penalties</p>
+                            <div class="metric mono text-6xl font-black tabular-nums leading-none text-rose-400 sm:text-7xl">
+                                <span id="ui-penalties">0.00</span><span class="ml-2 text-3xl text-slate-400">cm</span>
+                            </div>
+                        </div>
+                        <div class="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
+                            <p class="mb-2 text-xs uppercase tracking-[0.35em] text-slate-400">Waypoint</p>
+                            <div class="metric mono text-5xl font-black tabular-nums text-emerald-300 sm:text-6xl">
+                                <span id="ui-wp">0</span><span class="text-slate-500">/</span><span id="ui-total-wp">0</span>
+                            </div>
+                        </div>
+                        <div class="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
+                            <p class="mb-2 text-xs uppercase tracking-[0.35em] text-slate-400">Current snapshot</p>
+                            <div class="space-y-1 text-sm text-slate-300">
+                                <div class="flex items-center justify-between gap-4"><span>vx</span><span id="ui-vx" class="mono text-lg font-semibold text-white">0.00</span></div>
+                                <div class="flex items-center justify-between gap-4"><span>vy</span><span id="ui-vy" class="mono text-lg font-semibold text-white">0.00</span></div>
+                                <div class="flex items-center justify-between gap-4"><span>wz</span><span id="ui-wz" class="mono text-lg font-semibold text-white">0.00</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="glass rounded-[2rem] p-6 sm:p-8">
+                    <div class="flex items-center justify-between gap-4">
+                        <div>
+                            <p class="text-xs uppercase tracking-[0.35em] text-slate-400">Active run</p>
+                            <h2 id="ui-active-run-title" class="mt-2 text-2xl font-bold text-white">No active run yet</h2>
+                        </div>
+                        <div id="ui-active-run-state" class="rounded-full border border-white/10 bg-white/5 px-4 py-2 mono text-sm text-slate-300">IDLE</div>
+                    </div>
+
+                    <div class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+                        <div class="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
+                            <p class="mb-1 text-xs uppercase tracking-[0.35em] text-slate-400">Run label</p>
+                            <div id="ui-active-run-name" class="mono text-xl font-semibold text-amber-200 break-all">Waiting</div>
+                        </div>
+                        <div class="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
+                            <p class="mb-1 text-xs uppercase tracking-[0.35em] text-slate-400">Source</p>
+                            <div id="ui-active-run-source" class="mono text-xl font-semibold text-sky-200 break-all">Unknown</div>
+                        </div>
+                        <div class="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
+                            <p class="mb-1 text-xs uppercase tracking-[0.35em] text-slate-400">Last update</p>
+                            <div id="ui-active-run-updated" class="mono text-xl font-semibold text-white">--</div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+                        <div class="rounded-[1.5rem] border border-white/10 bg-slate-950/60 p-5">
+                            <p class="mb-1 text-xs uppercase tracking-[0.35em] text-slate-400">Run time</p>
+                            <div id="ui-active-run-time" class="mono text-4xl font-black text-white">0.00s</div>
+                        </div>
+                        <div class="rounded-[1.5rem] border border-white/10 bg-slate-950/60 p-5">
+                            <p class="mb-1 text-xs uppercase tracking-[0.35em] text-slate-400">Penalty</p>
+                            <div id="ui-active-run-penalties" class="mono text-4xl font-black text-rose-300">0.00 cm</div>
+                        </div>
+                        <div class="rounded-[1.5rem] border border-white/10 bg-slate-950/60 p-5">
+                            <p class="mb-1 text-xs uppercase tracking-[0.35em] text-slate-400">Waypoints</p>
+                            <div id="ui-active-run-waypoints" class="mono text-4xl font-black text-emerald-300">0/0</div>
+                        </div>
+                    </div>
+                </section>
+            </section>
+
+            <aside class="grid content-start gap-6">
+                <section class="glass rounded-[2rem] p-6">
+                    <p class="text-xs uppercase tracking-[0.35em] text-slate-400">Telemetry source</p>
+                    <div class="mt-4 space-y-3 rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
+                        <div>
+                            <div class="mb-1 text-sm text-slate-400">Topic</div>
+                            <div id="ui-topic" class="mono break-all text-lg text-slate-100">/omnirace_telemetry</div>
+                        </div>
+                        <div>
+                            <div class="mb-1 text-sm text-slate-400">Command node</div>
+                            <div id="ui-cmd-source" class="mono break-all text-lg text-cyan-200">Unknown</div>
+                        </div>
+                        <div class="flex flex-wrap gap-2 pt-1 text-xs text-slate-300">
+                            <span class="rounded-full border border-white/10 bg-slate-950/50 px-3 py-1">State changes archive runs locally</span>
+                            <span class="rounded-full border border-white/10 bg-slate-950/50 px-3 py-1">Sorted by time then penalties</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="glass rounded-[2rem] p-6">
+                    <div class="flex items-center justify-between gap-4">
+                        <div>
+                            <p class="text-xs uppercase tracking-[0.35em] text-slate-400">Leaderboard</p>
+                            <h2 class="mt-2 text-2xl font-bold text-white">Saved runs</h2>
+                        </div>
+                        <div id="ui-leaderboard-count" class="rounded-full border border-white/10 bg-white/5 px-4 py-2 mono text-sm text-slate-300">0 runs</div>
+                    </div>
+                    <div id="ui-leaderboard" class="mt-5 space-y-3"></div>
+                </section>
+
+                <section class="glass rounded-[2rem] p-6">
+                    <p class="text-xs uppercase tracking-[0.35em] text-slate-400">Payload</p>
+                    <pre id="ui-payload" class="mt-4 max-h-80 min-h-56 overflow-auto rounded-[1.5rem] border border-white/10 bg-slate-950/80 p-4 text-xs leading-6 text-slate-300">Waiting for data...</pre>
+                </section>
+
+                <section class="rounded-[2rem] border border-amber-500/20 bg-amber-500/10 p-5 text-sm text-amber-100">
+                    <p class="mb-1 font-semibold">Connection hint</p>
+                    <p>Make sure rosbridge is running and reachable from this browser. If you use a remote robot, replace <span class="mono">localhost</span> in the script. The leaderboard is stored in this browser.</p>
+                </section>
+            </aside>
+        </div>
+    </main>
+
+    <script>
+        const telemetryTopics = ['/omnirace_telemetry', '/race_telemetry'];
+        const STORAGE_KEYS = {
+            leaderboard: 'omnirace-dashboard-leaderboard-v1',
+            activeRun: 'omnirace-dashboard-active-run-v1',
+        };
+        const MAX_LEADERBOARD_ROWS = 8;
+        const ros = new ROSLIB.Ros({
+            url: 'ws://localhost:9091'
+        });
+
+        const runtime = {
+            leaderboard: loadStoredRuns(),
+            activeRun: loadStoredActiveRun(),
+            currentState: null,
+        };
+
+        function setStatus(text, connected) {
+            const statusBadge = document.getElementById('connection-status');
+            if (connected) {
+                statusBadge.classList.remove('bg-red-950/80', 'text-red-300', 'border-red-500/30');
+                statusBadge.classList.add('bg-emerald-950/80', 'text-emerald-300', 'border-emerald-500/30');
+            } else {
+                statusBadge.classList.remove('bg-emerald-950/80', 'text-emerald-300', 'border-emerald-500/30');
+                statusBadge.classList.add('bg-red-950/80', 'text-red-300', 'border-red-500/30');
+            }
+            statusBadge.innerText = text;
+        }
+
+        function safeNumber(value, fallback) {
+            const number = Number(value);
+            return Number.isFinite(number) ? number : fallback;
+        }
+
+        function storageRead(key, fallback) {
+            try {
+                const stored = localStorage.getItem(key);
+                if (stored === null) {
+                    return fallback;
+                }
+                return JSON.parse(stored);
+            } catch (error) {
+                console.warn('Unable to read dashboard storage:', key, error);
+                return fallback;
+            }
+        }
+
+        function storageWrite(key, value) {
+            try {
+                localStorage.setItem(key, JSON.stringify(value));
+            } catch (error) {
+                console.warn('Unable to persist dashboard storage:', key, error);
+            }
+        }
+
+        function loadStoredRuns() {
+            const runs = storageRead(STORAGE_KEYS.leaderboard, []);
+            return Array.isArray(runs) ? runs : [];
+        }
+
+        function loadStoredActiveRun() {
+            const run = storageRead(STORAGE_KEYS.activeRun, null);
+            return run && typeof run === 'object' ? run : null;
+        }
+
+        function persistLeaderboard() {
+            storageWrite(STORAGE_KEYS.leaderboard, runtime.leaderboard);
+        }
+
+        function persistActiveRun() {
+            storageWrite(STORAGE_KEYS.activeRun, runtime.activeRun);
+        }
+
+        function normalizeText(value, fallback) {
+            const text = String(value ?? '').trim();
+            return text.length > 0 ? text : fallback;
+        }
+
+        function compactSourceName(sourceName) {
+            const source = normalizeText(sourceName, 'Unknown');
+            if (source.startsWith('multiple:')) {
+                return source;
+            }
+            return source.replace(/^\/+/, '') || 'Unknown';
+        }
+
+        function buildRunName(state) {
+            const sourceName = compactSourceName(state.cmd_source_node ?? state.cmd_source ?? 'Unknown');
+            if (sourceName !== 'Unknown') {
+                return sourceName;
+            }
+            return normalizeText(state.team_name, 'Unnamed run');
+        }
+
+        function buildRunLabel(state) {
+            const teamName = normalizeText(state.team_name, 'Unknown team');
+            const sourceName = compactSourceName(state.cmd_source_node ?? state.cmd_source ?? 'Unknown');
+            if (sourceName === 'Unknown') {
+                return teamName;
+            }
+            if (teamName === sourceName) {
+                return sourceName;
+            }
+            return `${teamName} · ${sourceName}`;
+        }
+
+        function buildRunId() {
+            if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+                return crypto.randomUUID();
+            }
+            return `run-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        }
+
+        function formatDateTime(timestamp) {
+            if (!timestamp) {
+                return '--';
+            }
+
+            try {
+                return new Intl.DateTimeFormat(undefined, {
+                    dateStyle: 'short',
+                    timeStyle: 'short',
+                }).format(new Date(timestamp));
+            } catch (error) {
+                return new Date(timestamp).toLocaleString();
+            }
+        }
+
+        function formatRunDuration(value) {
+            return `${safeNumber(value, 0).toFixed(2)}s`;
+        }
+
+        function formatPenalty(value) {
+            return `${safeNumber(value, 0).toFixed(2)} cm`;
+        }
+
+        function formatWaypoint(current, total) {
+            return `${safeNumber(current, 0)}/${safeNumber(total, 0)}`;
+        }
+
+        function parseTelemetry(message) {
+            if (!message || typeof message.data !== 'string') {
+                return null;
+            }
+
+            try {
+                const parsed = JSON.parse(message.data);
+                return {
+                    team_name: normalizeText(parsed.team_name, 'UNKNOWN'),
+                    cmd_source: normalizeText(parsed.cmd_source, 'Unknown'),
+                    cmd_source_topic: normalizeText(parsed.cmd_source_topic, '/omnirace_telemetry'),
+                    elapsed_time: safeNumber(parsed.elapsed_time, 0),
+                    current_wp: safeNumber(parsed.current_wp, 0),
+                    total_wp: safeNumber(parsed.total_wp, 0),
+                    penalties: safeNumber(parsed.penalties, 0),
+                    status: normalizeText(parsed.status ?? parsed.state, 'UNKNOWN').toUpperCase(),
+                    cmd_vel: {
+                        vx: safeNumber(parsed.cmd_vel?.vx, 0),
+                        vy: safeNumber(parsed.cmd_vel?.vy, 0),
+                        wz: safeNumber(parsed.cmd_vel?.wz, 0),
+                    },
+                    raw: parsed,
+                };
+            } catch (error) {
+                console.warn('Failed to parse telemetry payload:', error, message.data);
+                return null;
+            }
+        }
+
+        function topicColorClass(status) {
+            switch (status) {
+                case 'READY':
+                    return 'border-emerald-500/30 bg-emerald-950/70 text-emerald-300';
+                case 'STARTED':
+                    return 'border-sky-500/30 bg-sky-950/70 text-sky-300';
+                case 'FINISHED':
+                    return 'border-amber-500/30 bg-amber-950/70 text-amber-300';
+                default:
+                    return 'border-white/10 bg-slate-950/60 text-slate-300';
+            }
+        }
+
+        function updateStatusBadge(text, status) {
+            const badge = document.getElementById('ui-status');
+            badge.innerText = text;
+            badge.className = `mt-1 text-3xl font-black sm:text-4xl rounded-full border px-4 py-2 inline-flex ${topicColorClass(status)}`;
+        }
+
+        function createActiveRun(state, topicName) {
+            return {
+                id: buildRunId(),
+                run_name: buildRunName(state),
+                display_name: buildRunLabel(state),
+                team_name: normalizeText(state.team_name, 'UNKNOWN'),
+                cmd_source: compactSourceName(state.cmd_source ?? state.cmd_source_node ?? 'Unknown'),
+                cmd_source_topic: normalizeText(state.cmd_source_topic, topicName),
+                topic_name: topicName,
+                status: state.status,
+                elapsed_time: state.elapsed_time,
+                penalties: state.penalties,
+                current_wp: state.current_wp,
+                total_wp: state.total_wp,
+                started_at: Date.now(),
+                updated_at: Date.now(),
+                completed_at: state.status === 'FINISHED' ? Date.now() : null,
+                raw: state.raw,
+            };
+        }
+
+        function syncActiveRun(state, topicName) {
+            const runName = buildRunName(state);
+            const sourceName = compactSourceName(state.cmd_source ?? state.cmd_source_node ?? 'Unknown');
+            const shouldStartFresh = !runtime.activeRun || runtime.activeRun.run_name !== runName || runtime.activeRun.team_name !== normalizeText(state.team_name, 'UNKNOWN');
+
+            if (shouldStartFresh) {
+                runtime.activeRun = createActiveRun(state, topicName);
+            } else {
+                runtime.activeRun.run_name = runName;
+                runtime.activeRun.display_name = buildRunLabel(state);
+                runtime.activeRun.team_name = normalizeText(state.team_name, 'UNKNOWN');
+                runtime.activeRun.cmd_source = sourceName;
+                runtime.activeRun.cmd_source_topic = normalizeText(state.cmd_source_topic, topicName);
+                runtime.activeRun.topic_name = topicName;
+                runtime.activeRun.status = state.status;
+                runtime.activeRun.elapsed_time = state.elapsed_time;
+                runtime.activeRun.penalties = state.penalties;
+                runtime.activeRun.current_wp = state.current_wp;
+                runtime.activeRun.total_wp = state.total_wp;
+                runtime.activeRun.updated_at = Date.now();
+                runtime.activeRun.raw = state.raw;
+                if (state.status === 'FINISHED') {
+                    runtime.activeRun.completed_at = runtime.activeRun.completed_at ?? Date.now();
+                }
+            }
+
+            persistActiveRun();
+        }
+
+        function archiveActiveRunIfReady(nextStatus) {
+            if (!runtime.activeRun || runtime.activeRun.completed_at === null) {
+                return;
+            }
+
+            if (nextStatus !== 'READY') {
+                return;
+            }
+
+            const archivedRun = {
+                ...runtime.activeRun,
+                finished_at: new Date(runtime.activeRun.completed_at).toISOString(),
+            };
+
+            runtime.leaderboard = [archivedRun, ...runtime.leaderboard]
+                .sort((left, right) => {
+                    const timeDelta = safeNumber(left.elapsed_time, 0) - safeNumber(right.elapsed_time, 0);
+                    if (Math.abs(timeDelta) > 1e-9) {
+                        return timeDelta;
+                    }
+
+                    const penaltyDelta = safeNumber(left.penalties, 0) - safeNumber(right.penalties, 0);
+                    if (Math.abs(penaltyDelta) > 1e-9) {
+                        return penaltyDelta;
+                    }
+
+                    return safeNumber(right.completed_at, 0) - safeNumber(left.completed_at, 0);
+                })
+                .slice(0, MAX_LEADERBOARD_ROWS);
+
+            runtime.activeRun = null;
+            persistLeaderboard();
+            persistActiveRun();
+            renderLeaderboard();
+        }
+
+        function renderActiveRun(state) {
+            const activeRun = runtime.activeRun;
+            const title = document.getElementById('ui-active-run-title');
+            const stateBadge = document.getElementById('ui-active-run-state');
+            const runName = document.getElementById('ui-active-run-name');
+            const source = document.getElementById('ui-active-run-source');
+            const updated = document.getElementById('ui-active-run-updated');
+            const elapsed = document.getElementById('ui-active-run-time');
+            const penalties = document.getElementById('ui-active-run-penalties');
+            const waypoints = document.getElementById('ui-active-run-waypoints');
+
+            if (!activeRun) {
+                title.innerText = 'No active run yet';
+                stateBadge.innerText = 'IDLE';
+                stateBadge.className = `rounded-full border px-4 py-2 mono text-sm ${topicColorClass('IDLE')}`;
+                runName.innerText = 'Waiting';
+                source.innerText = 'Unknown';
+                updated.innerText = '--';
+                elapsed.innerText = '0.00s';
+                penalties.innerText = '0.00 cm';
+                waypoints.innerText = '0/0';
+                return;
+            }
+
+            title.innerText = activeRun.display_name || activeRun.run_name;
+            stateBadge.innerText = activeRun.status;
+            stateBadge.className = `rounded-full border px-4 py-2 mono text-sm ${topicColorClass(activeRun.status)}`;
+            runName.innerText = activeRun.run_name;
+            source.innerText = activeRun.cmd_source;
+            updated.innerText = formatDateTime(activeRun.updated_at);
+            elapsed.innerText = formatRunDuration(activeRun.elapsed_time);
+            penalties.innerText = formatPenalty(activeRun.penalties);
+            waypoints.innerText = formatWaypoint(activeRun.current_wp, activeRun.total_wp);
+        }
+
+        function renderLeaderboard() {
+            const board = document.getElementById('ui-leaderboard');
+            const count = document.getElementById('ui-leaderboard-count');
+
+            count.innerText = `${runtime.leaderboard.length} run${runtime.leaderboard.length === 1 ? '' : 's'}`;
+
+            if (runtime.leaderboard.length === 0) {
+                board.innerHTML = `
+                    <div class="rounded-[1.5rem] border border-dashed border-white/10 bg-white/5 p-5 text-sm text-slate-400">
+                        No saved runs yet. Finish a run and return to READY to archive it here.
+                    </div>
+                `;
+                return;
+            }
+
+            board.innerHTML = runtime.leaderboard.map((run, index) => {
+                const rankPill = index === 0
+                    ? 'border-amber-400/30 bg-amber-500/10 text-amber-200'
+                    : 'border-white/10 bg-white/5 text-slate-200';
+
+                return `
+                    <article class="rounded-[1.5rem] border border-white/10 bg-slate-950/55 p-4">
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="flex items-start gap-4">
+                                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border ${rankPill} mono text-lg font-bold">
+                                    ${index + 1}
+                                </div>
+                                <div>
+                                    <div class="text-lg font-bold text-white break-all">${escapeHtml(run.run_name || 'Unnamed run')}</div>
+                                    <div class="mt-1 text-sm text-slate-400">${escapeHtml(run.team_name || 'UNKNOWN')} · ${escapeHtml(run.cmd_source || 'Unknown source')}</div>
+                                </div>
+                            </div>
+                            <div class="text-right mono">
+                                <div class="text-xl font-bold text-emerald-300">${formatRunDuration(run.elapsed_time)}</div>
+                                <div class="text-sm text-rose-300">${formatPenalty(run.penalties)}</div>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex flex-wrap gap-2 text-xs text-slate-300">
+                            <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1">${formatWaypoint(run.current_wp, run.total_wp)} waypoints</span>
+                            <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1">${escapeHtml(run.status || 'UNKNOWN')}</span>
+                            <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1">${escapeHtml(formatDateTime(run.finished_at || run.completed_at || run.updated_at))}</span>
+                        </div>
+                    </article>
+                `;
+            }).join('');
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#39;');
+        }
+
+        function renderTelemetry(state, topicName) {
+            runtime.currentState = state;
+
+            document.getElementById('ui-team').innerText = state.team_name;
+            document.getElementById('ui-time').innerText = state.elapsed_time.toFixed(2);
+            document.getElementById('ui-wp').innerText = state.current_wp;
+            document.getElementById('ui-total-wp').innerText = state.total_wp;
+            document.getElementById('ui-penalties').innerText = state.penalties.toFixed(2);
+            document.getElementById('ui-vx').innerText = state.cmd_vel.vx.toFixed(2);
+            document.getElementById('ui-vy').innerText = state.cmd_vel.vy.toFixed(2);
+            document.getElementById('ui-wz').innerText = state.cmd_vel.wz.toFixed(2);
+            document.getElementById('ui-topic').innerText = topicName;
+            document.getElementById('ui-run-topic').innerText = state.cmd_source_topic || topicName;
+            document.getElementById('ui-cmd-source').innerText = compactSourceName(state.cmd_source);
+            document.getElementById('ui-run-source').innerText = compactSourceName(state.cmd_source);
+            document.getElementById('ui-payload').innerText = JSON.stringify(state.raw, null, 2);
+            updateStatusBadge(state.status, state.status);
+
+            syncActiveRun(state, topicName);
+            archiveActiveRunIfReady(state.status);
+
+            if (!runtime.activeRun && state.status !== 'READY') {
+                syncActiveRun(state, topicName);
+            }
+
+            renderActiveRun(state);
+        }
+
+        function subscribeTelemetry(topicName) {
+            const topic = new ROSLIB.Topic({
+                ros: ros,
+                name: topicName,
+                messageType: 'std_msgs/String'
+            });
+
+            topic.subscribe(function(message) {
+                const state = parseTelemetry(message);
+                if (!state) {
+                    document.getElementById('ui-payload').innerText = 'Received telemetry, but the payload format is not valid JSON.';
+                    return;
+                }
+                renderTelemetry(state, topicName);
+            });
+        }
+
+        function initializeDashboard() {
+            renderLeaderboard();
+            renderActiveRun({
+                status: runtime.activeRun?.status || 'IDLE',
+                team_name: runtime.activeRun?.team_name || 'UNKNOWN',
+                cmd_source: runtime.activeRun?.cmd_source || 'Unknown',
+                cmd_source_topic: runtime.activeRun?.cmd_source_topic || '/omnirace_telemetry',
+                elapsed_time: runtime.activeRun?.elapsed_time || 0,
+                current_wp: runtime.activeRun?.current_wp || 0,
+                total_wp: runtime.activeRun?.total_wp || 0,
+                penalties: runtime.activeRun?.penalties || 0,
+                cmd_vel: { vx: 0, vy: 0, wz: 0 },
+                raw: runtime.activeRun?.raw || {},
+            });
+
+            if (runtime.activeRun) {
+                document.getElementById('ui-cmd-source').innerText = compactSourceName(runtime.activeRun.cmd_source);
+                document.getElementById('ui-run-source').innerText = compactSourceName(runtime.activeRun.cmd_source);
+                document.getElementById('ui-run-topic').innerText = runtime.activeRun.cmd_source_topic || '/omnirace_telemetry';
+            }
+        }
+
+        ros.on('connection', function() {
+            setStatus('CONNECTED', true);
+            telemetryTopics.forEach(subscribeTelemetry);
+        });
+
+        ros.on('error', function(error) {
+            console.log('Error connecting to websocket server: ', error);
+            document.getElementById('ui-payload').innerText = 'WebSocket connection error. Check rosbridge and the URL in the script.';
+        });
+
+        ros.on('close', function() {
+            setStatus('DISCONNECTED', false);
+        });
+
+        initializeDashboard();
+    </script>
+</body>
+</html>
