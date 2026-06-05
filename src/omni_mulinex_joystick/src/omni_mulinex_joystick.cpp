@@ -90,6 +90,7 @@ OmniMulinexJoystick::OmniMulinexJoystick(): Node("omni_mulinex_joystick")
         );
 
         joints_command_pub_ = this->create_publisher<pi3hat_moteus_int_msgs::msg::JointsCommand>("/omni_controller/joints_reference", 1);
+        laser_trigger_pub_ = this->create_publisher<std_msgs::msg::Empty>("/shoot", 1);
 
 
     } else {
@@ -457,7 +458,8 @@ void OmniMulinexJoystick::joy_callback_pan_tilt(const sensor_msgs::msg::Joy::Sha
     // □ (btn 3) → SHOOT
     if (btn_rising(2)) {
         // Reset body pose to zero for clean start
-        RCLCPP_WARN_STREAM(this->get_logger(), "SHOOT! (not implemented)");
+        RCLCPP_WARN_STREAM(this->get_logger(), "SHOOT!");
+        laser_trigger_pub_->publish(std_msgs::msg::Empty());
     }
 
     // R1 (btn 5) → emergency stop (also deactivates IK)

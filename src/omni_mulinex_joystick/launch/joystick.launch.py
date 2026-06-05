@@ -26,5 +26,11 @@ def generate_launch_description():
                 parameters=[config],
                 output='screen',
             ),
+            Node(
+                package='omni_mulinex_joystick',
+                executable='laser_interface.py',
+                name='laser_interface',
+                output='screen',
+            ),
         ]
     )

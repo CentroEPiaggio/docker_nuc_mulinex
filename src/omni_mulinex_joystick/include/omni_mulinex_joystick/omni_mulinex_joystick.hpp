@@ -9,6 +9,7 @@
 #include "sensor_msgs/msg/joy.hpp"
 #include "std_srvs/srv/set_bool.hpp"
 #include "pi3hat_moteus_int_msgs/msg/joints_command.hpp"
+#include "std_msgs/msg/empty.hpp"
 
 namespace omni_mulinex_joystick {
 
@@ -30,6 +31,7 @@ private:
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr twist_pub_;
     rclcpp::Publisher<geometry_msgs::msg::Pose>::SharedPtr pose_pub_;
     rclcpp::Publisher<pi3hat_moteus_int_msgs::msg::JointsCommand>::SharedPtr joints_command_pub_;
+    rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr laser_trigger_pub_;
 
     // Subscribers
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub_;
