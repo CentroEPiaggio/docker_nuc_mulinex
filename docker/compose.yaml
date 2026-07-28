@@ -6,9 +6,9 @@ services:
       args:
         - BASE_IMAGE=osrf/ros
         - BASE_TAG=humble-desktop-full
-        - MYUID=${UID}
-        - MYGID=${GID}
-        - USER=${USER}
+        - MYUID=${UID:-1000}
+        - MYGID=${GID:-1000}
+        - USER=${USER:-ros}
         - WORKSPACE=mulinex_ws
 
     image: mulinex:humble
@@ -34,7 +34,7 @@ services:
       - RCUTILS_COLORIZED_OUTPUT=1
       # Shell history
       - HISTFILE=/home/.bash_history
-      - HISTFILESIZE=${HISTFILESIZE}
+      - HISTFILESIZE=${HISTFILESIZE:-10000}
       # Audio
       - PULSE_SERVER=unix:${XDG_RUNTIME_DIR}/pulse/native
       # Misc

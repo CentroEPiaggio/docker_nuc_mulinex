@@ -24,21 +24,39 @@ find_package(pinocchio REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
 set(LIBRARY_NAME ${PROJECT_NAME})
-
-set(LIBRARY_DEPENDENCIES ament_index_cpp Eigen3 pinocchio)
+set(AMENT_LIBRARY_DEPENDENCIES ament_index_cpp)
 
 add_library(${LIBRARY_NAME} SHARED src/robot_wrapper.cpp)
 
 target_include_directories(
     ${LIBRARY_NAME}
-    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-           $<INSTALL_INTERFACE:include/${PROJECT_NAME}> ${EIGEN3_INCLUDE_DIR})
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
+        ${EIGEN3_INCLUDE_DIR}
+)
 
-target_link_libraries(${LIBRARY_NAME} PUBLIC yaml-cpp)
-ament_target_dependencies(${LIBRARY_NAME} PUBLIC ${LIBRARY_DEPENDENCIES})
+target_link_libraries(
+    ${LIBRARY_NAME}
+    PUBLIC
+        pinocchio::pinocchio
+        Eigen3::Eigen
+        yaml-cpp
+)
+
+ament_target_dependencies(
+    ${LIBRARY_NAME}
+    PUBLIC
+        ${AMENT_LIBRARY_DEPENDENCIES}
+)
 
 ament_export_targets(${LIBRARY_NAME}_targets HAS_LIBRARY_TARGET)
-ament_export_dependencies(${LIBRARY_DEPENDENCIES} yaml-cpp)
+ament_export_dependencies(
+    ament_index_cpp
+    Eigen3
+    pinocchio
+    yaml-cpp
+)
 
 install(DIRECTORY include/ DESTINATION include/${PROJECT_NAME})
 install(DIRECTORY robots DESTINATION share/${PROJECT_NAME})

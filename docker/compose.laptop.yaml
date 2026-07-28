@@ -1,0 +1,40 @@
+# Development-laptop overrides.
+#
+# Prepare the host environment first:
+#   bash demo0/setup_host.bash
+#
+# Use this file together with the robot-NUC base configuration:
+#   docker compose --env-file demo0/.env \
+#     -f docker/compose.yaml \
+#     -f docker/compose.laptop.yaml up -d
+
+services:
+  mulinex:
+    build:
+      args:
+        MYUID: ${HOST_UID:-1000}
+        MYGID: ${HOST_GID:-1000}
+        USER: ${HOST_USER:-ros}
+
+    container_name: mulinex-laptop
+    restart: unless-stopped
+
+    environment:
+      DISPLAY: ${DISPLAY:-:0}
+      XAUTHORITY: /tmp/.docker.xauth
+      ROS_DOMAIN_ID: ${ROS_DOMAIN_ID:-10}
+      PULSE_SERVER: unix:/tmp/host-pulse/native
+      XDG_RUNTIME_DIR: ${CONTAINER_XDG_RUNTIME_DIR:-/tmp/runtime-ros}
+      IGN_PARTITION: mulinex_demo0
+      GZ_PARTITION: mulinex_demo0
+      LIBGL_ALWAYS_SOFTWARE: ${LIBGL_ALWAYS_SOFTWARE:-0}
+      MPLCONFIGDIR: /home/${HOST_USER:-ros}/.matplotlib
+
+    group_add:
+      - video
+
+    volumes:
+      - ${XAUTH_FILE:-/tmp/.docker.xauth}:/tmp/.docker.xauth:ro
+      - ${PULSE_DIR:-/tmp/mulinex-demo0-empty-pulse}:/tmp/host-pulse:rw
+
+    command: ["bash", "-lc", "sleep infinity"]

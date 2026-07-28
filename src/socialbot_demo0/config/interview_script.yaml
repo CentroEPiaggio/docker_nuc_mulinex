@@ -1,0 +1,39 @@
+initial_pose:
+  frame_id: map
+  x: -2.50
+  y: -1.50
+  yaw: 0.0
+
+targets:
+  interview_spot:
+    frame_id: map
+    x: 1.35
+    y: 1.20
+    yaw: 0.0
+  home:
+    frame_id: map
+    x: -2.50
+    y: -1.50
+    yaw: 0.0
+
+steps:
+  - action: navigate
+    target: interview_spot
+    timeout: 120.0
+  - action: audio
+    file: introduction.wav
+  - action: audio
+    file: question_01.wav
+  - action: wait
+    seconds: 7.0
+  - action: audio
+    file: acknowledgement_01.wav
+  - action: audio
+    file: question_02.wav
+  - action: wait
+    seconds: 7.0
+  - action: audio
+    file: conclusion.wav
+  - action: navigate
+    target: home
+    timeout: 120.0
