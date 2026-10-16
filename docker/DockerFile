@@ -76,7 +76,7 @@ WORKDIR /home/${USER}/${WORKSPACE}
 
 # Install python packages as user
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
-RUN pip3 install --user numpy
+RUN pip3 install --user numpy bleak
 
 # Set up environment
 RUN echo "" >> ~/.bashrc \

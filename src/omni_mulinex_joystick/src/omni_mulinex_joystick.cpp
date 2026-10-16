@@ -419,27 +419,27 @@ void OmniMulinexJoystick::joy_callback_pan_tilt(const sensor_msgs::msg::Joy::Sha
         joy_left_x_ = dz(axes[0]);
     if (axes.size() > 1)
         joy_left_y_ = dz(axes[1]);
+    if (axes.size() > 2)
+        joy_right_x_ = dz(axes[2]);
     if (axes.size() > 3)
-        joy_right_x_ = dz(axes[3]);
+        joy_right_y_ = dz(axes[3]);
     if (axes.size() > 4)
-        joy_right_y_ = dz(axes[4]);
-    // if (axes.size() > 5)
-    //     joy_left_trigger_ = dz(axes[5]);
-    // if (axes.size() > 6)
-    //     joy_right_trigger_ = dz(axes[6]);
+        joy_left_trigger_ = dz(axes[4]);
+    if (axes.size() > 5)
+        joy_right_trigger_ = dz(axes[5]);
 
 
-    if (axes.size() > 5) {
-        if (!rt_initialized_ && axes[5] != 0.0)
-            rt_initialized_ = true;
-        joy_right_trigger_ = rt_initialized_ ? axes[5] : 1.0;
-    }
+   // if (axes.size() > 5) {
+   //     if (!rt_initialized_ && axes[5] != 0.0)
+   //         rt_initialized_ = true;
+   //     joy_right_trigger_ = rt_initialized_ ? axes[5] : 1.0;
+   // }
 
-    if (axes.size() > 2) {
-        if (!lt_initialized_ && axes[2] != 0.0)
-            lt_initialized_ = true;
-        joy_left_trigger_ = lt_initialized_ ? axes[2] : 1.0;
-    }
+   // if (axes.size() > 2) {
+   //     if (!lt_initialized_ && axes[2] != 0.0)
+   //         lt_initialized_ = true;
+   //     joy_left_trigger_ = lt_initialized_ ? axes[2] : 1.0;
+   // }
 
 
     // ── Services ────────────────────────────────────────────────────────
@@ -456,14 +456,14 @@ void OmniMulinexJoystick::joy_callback_pan_tilt(const sensor_msgs::msg::Joy::Sha
     }
 
     // □ (btn 3) → SHOOT
-    if (btn_rising(2)) {
+    if (btn_rising(5)) {
         // Reset body pose to zero for clean start
         RCLCPP_WARN_STREAM(this->get_logger(), "SHOOT!");
         laser_trigger_pub_->publish(std_msgs::msg::Empty());
     }
 
     // R1 (btn 5) → emergency stop (also deactivates IK)
-    if (btn_rising(5)) {
+    if (btn_rising(16)) {
         deactivate_ik();
 
         auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
@@ -539,8 +539,8 @@ void OmniMulinexJoystick::timer_callback_pan_tilt()
     twist_msg.linear.y = -joy_left_x_ * sup_vel_y_;
     // Triggers: normalize [1, -1] → [0, 1] pressed amount
     // RT = positive omega, LT = negative omega
-    double rt_pressed = (1.0 - joy_right_trigger_) / 2.0;
-    double lt_pressed = (1.0 - joy_left_trigger_)  / 2.0;
+    double lt_pressed = 1.0 - joy_right_trigger_;
+    double rt_pressed = 1.0 - joy_left_trigger_;
     if (rt_pressed) {
         twist_msg.angular.z = rt_pressed * sup_omega_;
     }
