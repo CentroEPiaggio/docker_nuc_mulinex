@@ -8,6 +8,8 @@
     <license>TODO: License declaration</license>
 
     <author email="tolomei.simone5@gmail.com">Simone Tolomei</author>
+    <depend>geometry_msgs</depend>
+    <depend>std_srvs</depend>
     <depend>tf2_ros</depend>
 
     <exec_depend>ament_index_python</exec_depend>
