@@ -78,7 +78,6 @@ class OmniWaypointFollower(Node):
             (3.50, 2.25, 2.618), # Y
             (4.00, 1.75, D135), # Z
             (4.25, 1.25, D90), # A1
-            (5.00, 0.75, 0), # B1
             (4.00, 0.75, 0), # C1
             (3.50, 0.75, D180), # C1
             (3.00, 1.00, 2.618), # D1
@@ -89,7 +88,7 @@ class OmniWaypointFollower(Node):
         self.current_wp_idx = 0
 
         # Current frame has a position offset of (1.75, 0.75), so i need to substract it from all the wpts
-        self.waypoints = [(x - 1.2, y - 0.75, theta) for (x, y, theta) in self.waypoints]
+        # self.waypoints = [(x - 1.2, y - 0.75, theta) for (x, y, theta) in self.waypoints]
 
         # Constraints
         self.max_v_xy = 0.5      # m/s
@@ -141,8 +140,8 @@ class OmniWaypointFollower(Node):
         # 1. Get current pose from TF
         try:
             t = self.tf_buffer.lookup_transform(
-                'map',
-                'Omnicar',
+                'world',
+                'base_link',
                 rclpy.time.Time()
             )
         except TransformException as ex:
@@ -184,9 +183,9 @@ class OmniWaypointFollower(Node):
 
         # 7. Publish Twist message
         msg = Twist()
-        msg.linear.x = -float(cmd_vx)
-        msg.linear.y = -float(cmd_vy)
-        msg.angular.z = -float(cmd_vtheta)
+        msg.linear.x = float(cmd_vx)
+        msg.linear.y = float(cmd_vy)
+        msg.angular.z = float(cmd_vtheta)
         self.cmd_vel_pub.publish(msg)
 
     def stop_robot(self):

@@ -26,6 +26,7 @@ setup(
     entry_points={
         'console_scripts': [
             'demo_run_node = omnirace_bringup.demo_run_node:main',
+            'go_to_start_node = omnirace_bringup.go_to_start_node:main',
         ],
     },
 )
