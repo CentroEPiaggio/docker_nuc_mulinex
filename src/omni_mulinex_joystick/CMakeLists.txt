@@ -40,6 +40,11 @@ install(TARGETS omni_mulinex_joystick_node DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY launch/ DESTINATION share/${PROJECT_NAME}/launch)
 install(DIRECTORY config/ DESTINATION share/${PROJECT_NAME}/config)
 
+install(PROGRAMS
+    scripts/laser_interface.py
+    DESTINATION lib/${PROJECT_NAME}
+)
+
 if(BUILD_TESTING)
     find_package(ament_lint_auto REQUIRED)
     ament_lint_auto_find_test_dependencies()

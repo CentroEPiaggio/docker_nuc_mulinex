@@ -11,7 +11,7 @@ def generate_launch_description():
     config = os.path.join(
         get_package_share_directory('omni_mulinex_joystick'),
         'config',
-        'joystick_params.yaml',
+        'joystick_params_pan_tilt.yaml',
     )
 
     twist_cmd_topic = LaunchConfiguration('twist_cmd_topic')
@@ -34,6 +34,12 @@ def generate_launch_description():
                 name='omni_mulinex_joystick',
                 parameters=[config],
                 remappings=[('/omni_controller/twist_cmd', twist_cmd_topic)],
+                output='screen',
+            ),
+            Node(
+                package='omni_mulinex_joystick',
+                executable='laser_interface.py',
+                name='laser_interface',
                 output='screen',
             ),
         ]
