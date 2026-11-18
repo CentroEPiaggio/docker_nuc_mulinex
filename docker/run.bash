@@ -9,7 +9,7 @@ then
 fi
 
 IMAGE_NAME=mulinex
-IMAGE_TAG=humble
+IMAGE_TAG=humble-omnirace
 
 xhost +
 docker run \

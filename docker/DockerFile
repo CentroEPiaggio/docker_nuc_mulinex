@@ -39,6 +39,7 @@ RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
     ros-$ROS_DISTRO-teleop-twist-joy \
     ros-$ROS_DISTRO-xacro \
     ros-$ROS_DISTRO-twist-mux \
+    ros-$ROS_DISTRO-rosbridge-suite \
     sudo \
     tmux \
     xterm
@@ -94,7 +95,10 @@ RUN echo "" >> ~/.bashrc \
  && echo "## ROS 2" >> ~/.bashrc \
  && echo 'source /opt/ros/$ROS_DISTRO/setup.bash' >> ~/.bashrc \
  && echo "source /usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash" >> ~/.bashrc \
- && echo "source /home/${USER}/${WORKSPACE}/install/setup.bash" >> ~/.bashrc
+ && echo "source /home/${USER}/${WORKSPACE}/install/setup.bash" >> ~/.bashrc 
+
+# && echo "export CYCLONEDDS_URI=file:///home/mulinex3/mulinex_ws/cyclonedds.xml" >> ~/.bashrc
+
 
 # Change entrypoint to source ~/.bashrc and start in ~
 COPY ./docker/.config/entrypoint.sh /ros_entrypoint.sh

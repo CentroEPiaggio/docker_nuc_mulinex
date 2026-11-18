@@ -248,8 +248,8 @@ void OmniMulinexJoystick::joy_callback(const sensor_msgs::msg::Joy::SharedPtr ms
 void OmniMulinexJoystick::timer_callback()
 {
     // Only publish while deadman (R2) is held. TODO: this culd be configured at launch
-    if (!r2_held_)
-        return;
+    //if (!r2_held_)
+    //    return;
 
     // ── Twist (wheels) ──────────────────────────────────────────────────
     geometry_msgs::msg::Twist twist_msg;

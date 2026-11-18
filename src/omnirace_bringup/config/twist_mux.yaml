@@ -1,0 +1,12 @@
+twist_mux:
+  ros__parameters:
+    use_stamped: false
+    topics:
+      joystick:
+        topic: /omni_controller/joystick_cmd_twist
+        timeout: 0.5
+        priority: 100
+      omnirace:
+        topic: /omnirace_cmd_twist
+        timeout: 0.5
+        priority: 50
