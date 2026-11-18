@@ -8,7 +8,7 @@ cd "$(dirname "$(dirname "$(realpath "${BASH_SOURCE[0]}")")")"
 BASE_IMAGE=osrf/ros
 BASE_TAG=humble-desktop-full
 IMAGE_NAME=mulinex
-IMAGE_TAG=humble
+IMAGE_TAG=humble-omnirace
 
 # =============================== Preliminaries ============================== #
 

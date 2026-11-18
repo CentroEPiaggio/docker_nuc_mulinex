@@ -77,6 +77,7 @@ private:
     double joy_right_y_ = 0.0;
     double joy_right_trigger_ = 0.0;
     double joy_left_trigger_ = 0.0;
+    bool r2_held_ = false;
     bool l2_held_ = false;
     bool ik_active_ = false;
 
