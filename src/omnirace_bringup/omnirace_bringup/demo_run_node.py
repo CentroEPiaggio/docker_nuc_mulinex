@@ -50,6 +50,7 @@ class OmniWaypointFollower(Node):
         #     (0.5, 2.0, 0), #V
         # ]
 
+        # Race track: start + 32 official waypoints.
         self.waypoints = [
             (0.00, 0.00, 0), # C
             (1.00, 1.00, -D90), # B
@@ -85,6 +86,19 @@ class OmniWaypointFollower(Node):
             (1.50, 1.25, D90), # F1
             (0.00, 2.00, 0), # G1
         ]
+
+        # Line test: y = 0, orientation changes at every waypoint (uncomment to use).
+        # 180 -> -90 crosses +-pi; the last one is a rotation in place.
+        # self.waypoints = [
+        #     (0.00, 0.00, 0),     # start
+        #     (0.50, 0.00, 0),
+        #     (1.00, 0.00, D90),
+        #     (1.50, 0.00, D180),
+        #     (2.00, 0.00, -D90),
+        #     (2.50, 0.00, D45),
+        #     (3.00, 0.00, -D135),
+        #     (3.00, 0.00, 0),
+        # ]
         self.current_wp_idx = 0
 
         # Current frame has a position offset of (1.75, 0.75), so i need to substract it from all the wpts

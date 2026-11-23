@@ -9,3 +9,6 @@ docker/.env
 rosbag2_*
 
 
+
+# Omnirace recordings
+bags/

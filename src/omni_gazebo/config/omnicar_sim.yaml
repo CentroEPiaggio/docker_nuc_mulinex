@@ -27,7 +27,7 @@ omni_controller:
     # Wheel IK
     wheel_mode: ik
     feet_type: mecanum
-    wheel_rad: 0.05
+    wheel_rad: 0.075
     driveshaft_x: 0.235
     driveshaft_y: 0.188
     mecanum_angle: 135.0
