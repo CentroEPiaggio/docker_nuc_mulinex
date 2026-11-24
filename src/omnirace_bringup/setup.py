@@ -26,6 +26,7 @@ setup(
         'console_scripts': [
             'demo_run_node = omnirace_bringup.demo_run_node:main',
             'go_to_start_node = omnirace_bringup.go_to_start_node:main',
+            'joy_estop_node = omnirace_bringup.joy_estop_node:main',
         ],
     },
 )
