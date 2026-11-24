@@ -7,3 +7,4 @@
 [submodule "src/mocap4ros2_qualisys"]
 	path = src/mocap4ros2_qualisys
 	url = https://github.com/CentroEPiaggio/mocap4ros2_qualisys.git
+	branch = omnirace
