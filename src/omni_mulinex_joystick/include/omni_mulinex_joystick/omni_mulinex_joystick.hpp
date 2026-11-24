@@ -8,6 +8,8 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 #include "std_srvs/srv/set_bool.hpp"
+#include "pi3hat_moteus_int_msgs/msg/joints_command.hpp"
+#include "std_msgs/msg/empty.hpp"
 
 namespace omni_mulinex_joystick {
 
@@ -17,14 +19,19 @@ public:
 
 private:
     void joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg);
+    void joy_callback_pan_tilt(const sensor_msgs::msg::Joy::SharedPtr msg);
     void timer_callback();
+    void timer_callback_pan_tilt();
     void state_callback(const pi3hat_moteus_int_msgs::msg::JointsStates::SharedPtr msg);
     void deactivate_ik();
     void print_instructions();
+    void print_instructions_pan_tilt();
 
     // Publishers
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr twist_pub_;
     rclcpp::Publisher<geometry_msgs::msg::Pose>::SharedPtr pose_pub_;
+    rclcpp::Publisher<pi3hat_moteus_int_msgs::msg::JointsCommand>::SharedPtr joints_command_pub_;
+    rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr laser_trigger_pub_;
 
     // Subscribers
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub_;
@@ -45,6 +52,8 @@ private:
     double sup_vel_x_;
     double sup_vel_y_;
     double sup_omega_;
+    double sup_pan_vel_;
+    double sup_tilt_vel_;
     double height_step_;
     double yaw_step_;
     double roll_step_;
@@ -59,6 +68,7 @@ private:
     double deadzone_;
     int timer_period_ms_;
     bool subscribe_state_;
+    std::string mode_;
 
     // Stored joystick analog inputs
     double joy_left_x_ = 0.0;
@@ -66,8 +76,13 @@ private:
     double joy_right_x_ = 0.0;
     double joy_right_y_ = 0.0;
     bool r2_held_ = false;
+    double joy_right_trigger_ = 0.0;
+    double joy_left_trigger_ = 0.0;
     bool l2_held_ = false;
     bool ik_active_ = false;
+
+    bool rt_initialized_ = false;
+    bool lt_initialized_ = false;
 
     // State: body pose (accumulated via rate control)
     double body_x_ = 0.0;

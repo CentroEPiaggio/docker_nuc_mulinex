@@ -7,12 +7,14 @@ namespace omni_mulinex_joystick {
 
 OmniMulinexJoystick::OmniMulinexJoystick(): Node("omni_mulinex_joystick")
 {
-    print_instructions();
+    
 
     // Declare parameters
     this->declare_parameter("sup_vel_x", 1.0);
     this->declare_parameter("sup_vel_y", 1.0);
     this->declare_parameter("sup_omega", 2.0);
+    this->declare_parameter("sup_pan", 0.5);
+    this->declare_parameter("sup_tilt", 0.5);
     this->declare_parameter("height_step", 0.005);
     this->declare_parameter("yaw_step", 0.02);
     this->declare_parameter("roll_step", 0.02);
@@ -27,11 +29,14 @@ OmniMulinexJoystick::OmniMulinexJoystick(): Node("omni_mulinex_joystick")
     this->declare_parameter("deadzone", 0.1);
     this->declare_parameter("timer_period_ms", 100);
     this->declare_parameter("subscribe_state", true);
+    this->declare_parameter("mode", "normal");
 
     // Read parameters
     sup_vel_x_ = this->get_parameter("sup_vel_x").as_double();
     sup_vel_y_ = this->get_parameter("sup_vel_y").as_double();
     sup_omega_ = this->get_parameter("sup_omega").as_double();
+    sup_pan_vel_ = this->get_parameter("sup_pan").as_double();
+    sup_tilt_vel_ = this->get_parameter("sup_tilt").as_double();
     height_step_ = this->get_parameter("height_step").as_double();
     yaw_step_ = this->get_parameter("yaw_step").as_double();
     roll_step_ = this->get_parameter("roll_step").as_double();
@@ -46,6 +51,7 @@ OmniMulinexJoystick::OmniMulinexJoystick(): Node("omni_mulinex_joystick")
     deadzone_ = this->get_parameter("deadzone").as_double();
     timer_period_ms_ = this->get_parameter("timer_period_ms").as_int();
     subscribe_state_ = this->get_parameter("subscribe_state").as_bool();
+    mode_ = this->get_parameter("mode").as_string();
 
     // Twist publisher with BestEffort QoS and deadline
     rclcpp::QoS twist_qos(10);
@@ -58,9 +64,51 @@ OmniMulinexJoystick::OmniMulinexJoystick(): Node("omni_mulinex_joystick")
     pose_pub_ = this->create_publisher<geometry_msgs::msg::Pose>("/ik_controller/base_pose", 1);
 
     // Joy subscriber
-    joy_sub_ = this->create_subscription<sensor_msgs::msg::Joy>(
-        "joy", 10, std::bind(&OmniMulinexJoystick::joy_callback, this, std::placeholders::_1)
-    );
+    if (mode_ == "normal") {
+        print_instructions();
+        joy_sub_ = this->create_subscription<sensor_msgs::msg::Joy>(
+            "joy", 10, std::bind(&OmniMulinexJoystick::joy_callback, this, std::placeholders::_1)
+        );
+
+        // Timer
+        timer_ = this->create_wall_timer(
+            std::chrono::milliseconds(timer_period_ms_),
+            std::bind(&OmniMulinexJoystick::timer_callback, this)
+        );
+
+    } else if (mode_ == "pan-tilt") {
+
+        print_instructions_pan_tilt();
+        joy_sub_ = this->create_subscription<sensor_msgs::msg::Joy>(
+            "joy", 10, std::bind(&OmniMulinexJoystick::joy_callback_pan_tilt, this, std::placeholders::_1)
+        );
+
+        // Timer
+        timer_ = this->create_wall_timer(
+            std::chrono::milliseconds(timer_period_ms_),
+            std::bind(&OmniMulinexJoystick::timer_callback_pan_tilt, this)
+        );
+
+        joints_command_pub_ = this->create_publisher<pi3hat_moteus_int_msgs::msg::JointsCommand>("/omni_controller/joints_reference", 1);
+        laser_trigger_pub_ = this->create_publisher<std_msgs::msg::Empty>("/shoot", 1);
+
+
+    } else {
+
+        print_instructions();
+        RCLCPP_WARN_STREAM(this->get_logger(), "Unknown mode '" << mode_ << "'. Defaulting to 'normal'.");
+        joy_sub_ = this->create_subscription<sensor_msgs::msg::Joy>(
+            "joy", 10, std::bind(&OmniMulinexJoystick::joy_callback_pan_tilt, this, std::placeholders::_1)
+        );
+
+        // Timer
+        timer_ = this->create_wall_timer(
+            std::chrono::milliseconds(timer_period_ms_),
+            std::bind(&OmniMulinexJoystick::timer_callback, this)
+        );
+    }
+
+    
 
     // State subscriber (optional)
     if (subscribe_state_) {
@@ -81,11 +129,7 @@ OmniMulinexJoystick::OmniMulinexJoystick(): Node("omni_mulinex_joystick")
     ik_activate_client_ =
         this->create_client<std_srvs::srv::SetBool>("/ik_controller/activate_srv");
 
-    // Timer
-    timer_ = this->create_wall_timer(
-        std::chrono::milliseconds(timer_period_ms_),
-        std::bind(&OmniMulinexJoystick::timer_callback, this)
-    );
+    
 }
 
 void OmniMulinexJoystick::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg)

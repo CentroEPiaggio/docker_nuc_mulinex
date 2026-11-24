@@ -58,5 +58,7 @@ docker run \
     --env="MPLCONFIGDIR=/home/$USER/.matplotlib" \
     --env="XDG_RUNTIME_DIR=/tmp/runtime-$USER" \
     --name mulinex \
+    -v /var/run/dbus:/var/run/dbus \
+    --env="DBUS_SYSTEM_BUS_ADDRESS=unix:path=/var/run/dbus/system_bus_socket" \
     ${IMAGE_NAME}:${IMAGE_TAG} \
     bash
