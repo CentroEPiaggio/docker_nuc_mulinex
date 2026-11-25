@@ -9,3 +9,7 @@ docker/.env
 rosbag2_*
 
 
+
+# local data: robot bags and Simulink student builds
+bags/
+student_ws/
