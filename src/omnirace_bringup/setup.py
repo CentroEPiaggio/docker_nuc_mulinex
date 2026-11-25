@@ -27,6 +27,10 @@ setup(
             'demo_run_node = omnirace_bringup.demo_run_node:main',
             'go_to_start_node = omnirace_bringup.go_to_start_node:main',
             'joy_estop_node = omnirace_bringup.joy_estop_node:main',
+            'twist_test = omnirace_bringup.twist_test:main',
+            'move_relative = omnirace_bringup.move_relative:main',
+            'limit_test = omnirace_bringup.limit_test:main',
+            'ident_run = omnirace_bringup.ident_run:main',
         ],
     },
 )

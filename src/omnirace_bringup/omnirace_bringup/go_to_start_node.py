@@ -48,8 +48,9 @@ class OmniGoToStart(Node):
         self.activation_failed = False
 
         self.timer = self.create_timer(0.05, self.control_loop)
-        self.get_logger().info('Go-to-start node initialized; waiting to activate controller.')
-        self.request_activation()
+        # Activation is manual (Y on the joystick): a node must not undo an emergency stop (A).
+        self.get_logger().info('Go-to-start node initialized; activate the controller with Y on the joystick.')
+        # self.request_activation()
 
     @staticmethod
     def normalize_angle(angle):
@@ -103,7 +104,7 @@ class OmniGoToStart(Node):
         #     return
 
         try:
-            t = self.tf_buffer.lookup_transform('map', 'Omnicar', rclpy.time.Time())
+            t = self.tf_buffer.lookup_transform('world', 'base_link', rclpy.time.Time())
         except TransformException as ex:
             self.get_logger().warn(f'Waiting for TF world->base_link: {ex}', throttle_duration_sec=2.0)
             return

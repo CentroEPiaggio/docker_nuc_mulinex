@@ -7,13 +7,13 @@ Parameters (indices as in `ros2 topic echo /joy --field buttons` / `--field axes
     drive            default False: no twist published (another node drives the robot)
     max_v, max_w     drive=True: linear speed at full stick [m/s], rotation speed [rad/s]
     axis_x, axis_y   drive=True: left stick axes (up = +x forward, left = +y)
-    rot_left_axis    drive=True: left trigger axis, rotate counter-clockwise (default 4)
-    rot_right_axis   drive=True: right trigger axis, rotate clockwise (default 5)
+    rot_left_axis    drive=True: trigger axis to rotate counter-clockwise (default 5)
+    rot_right_axis   drive=True: trigger axis to rotate clockwise (default 4)
                      rotation speed is proportional to how far the trigger is pressed
     trigger_rest, trigger_pressed   axis value with the trigger released / fully pressed
                      (default 1.0 / -1.0, as joy_node reports them)
     rot_left_button, rot_right_button   used instead of the axes when the axis is -1
-                     (on/off rotation at max_w; defaults 8 / 9)
+                     (on/off rotation at max_w; defaults 9 / 8)
 
 Buttons react to the press (0 -> 1), so holding one sends a single request.
 With drive=True the twist goes to /omni_controller/twist_cmd at 20 Hz with the QoS the
@@ -41,10 +41,10 @@ class JoyEstop(Node):
         self.max_w = p('max_w', 0.6)
         self.axis_x = p('axis_x', 1)
         self.axis_y = p('axis_y', 0)
-        self.rot_left = p('rot_left_button', 8)
-        self.rot_right = p('rot_right_button', 9)
-        self.rot_left_axis = p('rot_left_axis', 4)
-        self.rot_right_axis = p('rot_right_axis', 5)
+        self.rot_left = p('rot_left_button', 9)
+        self.rot_right = p('rot_right_button', 8)
+        self.rot_left_axis = p('rot_left_axis', 5)
+        self.rot_right_axis = p('rot_right_axis', 4)
         self.trig_rest = p('trigger_rest', 1.0)
         self.trig_pressed = p('trigger_pressed', -1.0)
         # joy_node reports a trigger as 0.0 until it is first moved: ignore it until then

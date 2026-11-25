@@ -25,10 +25,10 @@ def generate_launch_description():
         ('drive', 'false', bool, 'Also drive the robot: left stick + rotation buttons'),
         ('max_v', '0.3', float, 'drive:=true, full-stick linear speed [m/s]'),
         ('max_w', '0.6', float, 'drive:=true, rotation speed [rad/s]'),
-        ('rot_left_axis', '4', int, 'drive:=true, left trigger axis: rotate counter-clockwise'),
-        ('rot_right_axis', '5', int, 'drive:=true, right trigger axis: rotate clockwise'),
-        ('rot_left_button', '8', int, 'drive:=true, used if rot_left_axis is -1 (on/off)'),
-        ('rot_right_button', '9', int, 'drive:=true, used if rot_right_axis is -1 (on/off)'),
+        ('rot_left_axis', '5', int, 'drive:=true, trigger axis: rotate counter-clockwise'),
+        ('rot_right_axis', '4', int, 'drive:=true, trigger axis: rotate clockwise'),
+        ('rot_left_button', '9', int, 'drive:=true, used if rot_left_axis is -1 (on/off)'),
+        ('rot_right_button', '8', int, 'drive:=true, used if rot_right_axis is -1 (on/off)'),
     ]
     return LaunchDescription(
         [DeclareLaunchArgument(n, default_value=d, description=desc) for n, d, _, desc in args]

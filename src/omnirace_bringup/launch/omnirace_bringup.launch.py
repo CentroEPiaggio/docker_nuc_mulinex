@@ -79,16 +79,39 @@ def generate_launch_description():
         default_value='false',
     )
 
+    # Pan-tilt joystick (omni_mulinex_joystick), replaced by joystick_estop for Omnirace.
+    # joystick_launch = IncludeLaunchDescription(
+    #     PythonLaunchDescriptionSource(
+    #         os.path.join(
+    #             get_package_share_directory('omni_mulinex_joystick'),
+    #             'launch',
+    #             'joystick.launch.py',
+    #         )
+    #     ),
+    #     launch_arguments={
+    #         'twist_cmd_topic': '/omni_controller/joystick_cmd_twist',
+    #     }.items(),
+    # )
+
+    # Omnirace joystick: A = emergency stop, Y = activate; drive:=true also drives the robot
+    # (left stick + triggers, max_v / max_w; omni_controller limits to 0.5 m/s, 1 rad/s).
+    joystick_args = [
+        DeclareLaunchArgument('drive', default_value='false'),
+        DeclareLaunchArgument('max_v', default_value='0.3'),
+        DeclareLaunchArgument('max_w', default_value='0.6'),
+    ]
     joystick_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(
-                get_package_share_directory('omni_mulinex_joystick'),
+                get_package_share_directory('omnirace_bringup'),
                 'launch',
-                'joystick.launch.py',
+                'joystick_estop.launch.py',
             )
         ),
         launch_arguments={
-            'twist_cmd_topic': '/omni_controller/joystick_cmd_twist',
+            'drive': LaunchConfiguration('drive'),
+            'max_v': LaunchConfiguration('max_v'),
+            'max_w': LaunchConfiguration('max_w'),
         }.items(),
     )
 
@@ -102,7 +125,7 @@ def generate_launch_description():
         ),
     )
 
-    return LaunchDescription([
+    return LaunchDescription(joystick_args + [
         joystick_launch,
         record_bag_arg,
         qualisys_launch,
