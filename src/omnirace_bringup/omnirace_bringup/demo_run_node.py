@@ -50,41 +50,84 @@ class OmniWaypointFollower(Node):
         #     (0.5, 2.0, 0), #V
         # ]
 
+        # Race track: start + 32 official waypoints.
+        # Track reduced by 15 % toward the start (0, 0), x and y rounded to 0.1 m; headings unchanged.
         self.waypoints = [
-            (0.00, 0.00, 0), # C
-            (1.00, 1.00, -D90), # B
-            (1.25, 0.50, -D45), # C
-            (1.75, 0.25, 0), # D
-            (2.25, 0.50, D45), # E
-            (2.50, 1.00, 1.047), # F
-            (2.75, 1.50, D45), # G
-            (3.25, 1.75, 0), # H
-            (3.75, 1.50, -D45), # I
-            (4.00, 1.00, -D90), # J
-            (3.75, 0.50, -2.094), # K
-            (3.25, 0.25, D180), # L
-            (2.75, 0.50, 2.094), # M
-            (2.50, 1.00, 2.094), # N
-            (2.25, 1.50, D135), # O
-            (1.75, 1.75, D180), # P
-            (1.25, 1.50, -2.094), # Q
-            (1.00, 1.00, -D90), # R
-            (1.00, 0.50, D90), # S
-            (0.75, 2.00, 1.047), # T
-            (1.25, 2.50, 0), # U
-            (2.00, 2.00, D45), # V
-            (2.00, 2.50, -1.047), # W
-            (2.75, 2.50, -3.142), # X
-            (3.50, 2.25, 2.618), # Y
-            (4.00, 1.75, D135), # Z
-            (4.25, 1.25, D90), # A1
-            (4.00, 0.75, 0), # C1
-            (3.50, 0.75, D180), # C1
-            (3.00, 1.00, 2.618), # D1
-            (2.50, 1.25, -2.880), # E1
-            (1.50, 1.25, D90), # F1
-            (0.00, 2.00, 0), # G1
+            (0.0, 0.0, 0), # C
+            (0.9, 0.9, -D90), # B
+            (1.1, 0.4, -D45), # C
+            (1.5, 0.2, 0), # D
+            (1.9, 0.4, D45), # E
+            (2.1, 0.9, 1.047), # F
+            (2.3, 1.3, D45), # G
+            (2.8, 1.5, 0), # H
+            (3.2, 1.3, -D45), # I
+            (3.4, 0.9, -D90), # J
+            (3.2, 0.4, -2.094), # K
+            (2.8, 0.2, D180), # L
+            (2.3, 0.4, 2.094), # M
+            (2.1, 0.9, 2.094), # N
+            (1.9, 1.3, D135), # O
+            (1.5, 1.5, D180), # P
+            (1.1, 1.3, -2.094), # Q
+            (0.9, 0.9, -D90), # R
+            (0.9, 0.4, D90), # S
+            (0.6, 1.7, 1.047), # T
+            (1.1, 2.1, 0), # U
+            (1.7, 1.7, D45), # V
+            (1.7, 2.1, -1.047), # W
+            (2.3, 2.1, -3.142), # X
+            (3.0, 1.9, 2.618), # Y
+            (3.4, 1.5, D135), # Z
+            (3.6, 1.1, D90), # A1
+            (3.4, 0.6, 0), # C1
+            (3.0, 0.6, D180), # C1
+            (2.6, 0.9, 2.618), # D1
+            (2.1, 1.1, -2.880), # E1
+            (1.3, 1.1, D90), # F1
+            (0.0, 1.7, 0), # G1
         ]
+
+        # Test course (kept, not official; uncomment to use), same workspace (x 0..3.6, y 0..2.1), about as long as the official
+        # reduced track (simulated 47 s vs 46 s). Waypoints far apart (1.5 to 2.3 m after the
+        # diagonal run). Waypoint 2 is the one long run that exploits the per-axis limits:
+        # 2.8 m along +x with the body at -45 deg, i.e. a diagonal in the body frame
+        # (vx = vy = 0.5 -> 0.71 m/s). Headings change gradually (30 deg, at most 45 deg)
+        # between waypoints, except three sharp rotations: 90 deg at wp 5, 60 deg at wp 8,
+        # 90 deg at wp 13. (x [m], y [m], theta [deg])
+        # test_course_deg = [
+        #     (0.0, 0.0, 0),       # start
+        #     (0.4, 0.4, 0),
+        #     (3.2, 0.4, -45),     # long diagonal run (body at -45 deg to the motion)
+        #     (2.2, 1.9, -15), (0.4, 1.2, 15),
+        #     (2.0, 0.4, 105),     # sharp: 90 deg
+        #     (3.3, 1.8, 135), (1.2, 1.9, 165),
+        #     (0.4, 0.6, -135),    # sharp: 60 deg
+        #     (2.6, 1.2, -105), (1.0, 1.8, -75), (3.2, 1.4, -45), (2.0, 0.5, -15),
+        #     (0.6, 1.6, 75),      # sharp: 90 deg
+        #     (2.2, 2.0, 45), (0.0, 1.7, 0),
+        # ]
+        # self.waypoints = [(x, y, math.radians(t)) for x, y, t in test_course_deg]
+
+        # Short test: 0.5 m straight along x, heading unchanged.
+        # self.waypoints = [
+        #     (0.00, 0.00, 0),  # start
+        #     (0.50, 0.00, 0),
+        # ]
+
+        # Line test, y = LINE_Y, orientation changes at every waypoint (uncomment to use).
+        # 180 -> -90 crosses +-pi; the last one is a rotation in place.
+        # LINE_Y = 0.74  # line shifted in y, where the real-robot tests were run (track: 0.00)
+        # self.waypoints = [
+        #     (0.00, LINE_Y, 0),     # start
+        #     (0.50, LINE_Y, 0),
+        #     (1.00, LINE_Y, D90),
+        #     (1.50, LINE_Y, D180),
+        #     (2.00, LINE_Y, -D90),
+        #     (2.50, LINE_Y, D45),
+        #     (3.00, LINE_Y, -D135),
+        #     (3.00, LINE_Y, 0),
+        # ]
         self.current_wp_idx = 0
 
         # Current frame has a position offset of (1.75, 0.75), so i need to substract it from all the wpts
@@ -92,6 +135,7 @@ class OmniWaypointFollower(Node):
 
         # Constraints
         self.max_v_xy = 0.5      # m/s
+        # self.max_v_xy = 0.2    # m/s, reduced for the first tests on the real robot
         self.max_v_theta = 1.0   # rad/s
 
         # Tolerances
