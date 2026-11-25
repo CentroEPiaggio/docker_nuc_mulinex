@@ -112,9 +112,9 @@ class RaceManagerNode(Node):
         # --- Configuration & Parameters ---
         self.team_name = "Team 1"
         self.target_frame = 'world'
-        self.target_frame = 'map'
+        # self.target_frame = 'map'
         self.source_frame = 'base_link'
-        self.source_frame = 'Omnicar'
+        # self.source_frame = 'Omnicar'
         self.origin_xy_tolerance = 0.15
         self.origin_theta_tolerance = 0.2
         self.ready_delay_sec = 5.0
