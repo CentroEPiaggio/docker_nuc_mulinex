@@ -10,7 +10,7 @@ start:
 	$(COMPOSE) up -d
 
 attach:
-	docker exec -it mulinex bash
+	docker exec -it omnirace bash
 
 stop:
 	$(COMPOSE) down

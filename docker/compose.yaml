@@ -11,8 +11,8 @@ services:
         - USER=${USER}
         - WORKSPACE=mulinex_ws
 
-    image: mulinex:humble
-    container_name: mulinex
+    image: mulinex:humble-omnirace
+    container_name: omnirace
     network_mode: "host"
     ipc: host
     privileged: true
